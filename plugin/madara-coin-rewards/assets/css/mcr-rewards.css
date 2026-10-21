@@ -1,0 +1,436 @@
+/*
+ * Madara Coin & Rewards - the rewards interface.
+ *
+ * The daily check-in page, the wallet header and the ad panel.
+ *
+ * Everything is scoped under .mcr-scope, which the plugin puts on the
+ * wrapper it renders, so these rules can never reach the Madara theme or
+ * any other plugin. The colours and the spacing come from the
+ * --mcr-* variables in mcr-design-system.css, so the two files stay in
+ * step, and the breakpoints match the theme's own (480/768/992/1200).
+ */
+
+/* -------------------------------------------------------------------------
+ * 1. The wallet header
+ *
+ * Who the reader is, and what they are holding. The balance carries the
+ * data-mcr-balance attribute, so the script repaints it the moment a
+ * reward is credited.
+ * ---------------------------------------------------------------------- */
+
+.mcr-scope .mcr-wallet {
+	display: grid;
+	gap: 18px;
+	grid-template-columns: minmax(0, 1fr);
+	align-items: center;
+	margin-block-end: var(--mcr-space-section);
+	padding: 22px 24px;
+	border: 1px solid var(--mcr-border-light);
+	border-radius: var(--mcr-radius);
+	background:
+		radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--mcr-accent-2) 12%, transparent) 0%, transparent 55%),
+		radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--mcr-accent) 10%, transparent) 0%, transparent 60%),
+		var(--mcr-bg-surface);
+	box-shadow: var(--mcr-shadow-sm);
+}
+
+.mcr-scope .mcr-wallet__profile {
+	display: flex;
+	gap: 14px;
+	align-items: center;
+	min-width: 0;
+}
+
+.mcr-scope .mcr-wallet__avatar {
+	display: grid;
+	flex: 0 0 auto;
+	place-items: center;
+	width: 56px;
+	height: 56px;
+	overflow: hidden;
+	border: 2px solid var(--mcr-bg-surface);
+	border-radius: 50%;
+	background: linear-gradient(135deg, var(--mcr-accent), var(--mcr-accent-2));
+	box-shadow: 0 4px 12px color-mix(in srgb, var(--mcr-accent) 28%, transparent);
+}
+
+.mcr-scope .mcr-wallet__avatar img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.mcr-scope .mcr-wallet__initials {
+	color: #fff;
+	font-family: var(--mcr-font-heading);
+	font-size: 18px;
+	font-weight: 700;
+	letter-spacing: .02em;
+}
+
+.mcr-scope .mcr-wallet__identity {
+	display: grid;
+	gap: 2px;
+	min-width: 0;
+}
+
+.mcr-scope .mcr-wallet__name {
+	overflow: hidden;
+	color: var(--mcr-text-primary);
+	font-family: var(--mcr-font-heading);
+	font-size: 15px;
+	font-weight: 600;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mcr-scope .mcr-wallet__meta {
+	color: var(--mcr-text-secondary);
+	font-size: 12px;
+	line-height: 1.5;
+}
+
+.mcr-scope .mcr-wallet__balance {
+	display: grid;
+	gap: 6px;
+	justify-items: start;
+	min-width: 0;
+}
+
+.mcr-scope .mcr-wallet__label {
+	color: var(--mcr-text-secondary);
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: .09em;
+	text-transform: uppercase;
+}
+
+.mcr-scope .mcr-wallet__guest {
+	color: var(--mcr-text-secondary);
+	font-size: 13px;
+	line-height: 1.6;
+}
+
+.mcr-scope .mcr-wallet__stats {
+	display: grid;
+	gap: 10px;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	width: 100%;
+}
+
+.mcr-scope .mcr-wallet__stat {
+	display: grid;
+	gap: 2px;
+	padding: 10px 12px;
+	border: 1px solid var(--mcr-border-light);
+	border-radius: var(--mcr-radius-sm);
+	background: var(--mcr-bg-surface);
+}
+
+.mcr-scope .mcr-wallet__stat-label {
+	color: var(--mcr-text-secondary);
+	font-size: 11px;
+	line-height: 1.4;
+}
+
+.mcr-scope .mcr-wallet__stat-value {
+	color: var(--mcr-text-primary);
+	font-family: var(--mcr-font-heading);
+	font-size: 17px;
+	font-weight: 700;
+}
+
+/* -------------------------------------------------------------------------
+ * 2. The claim card
+ *
+ * The brand red treatment, so the check-in reads as the primary action
+ * of the page.
+ * ---------------------------------------------------------------------- */
+
+.mcr-scope .mcr-card--claim {
+	position: relative;
+	overflow: hidden;
+	border-color: color-mix(in srgb, var(--mcr-accent) 28%, transparent);
+}
+
+.mcr-scope .mcr-card--claim::before {
+	position: absolute;
+	inset: 0 0 auto;
+	height: 3px;
+	background: linear-gradient(90deg, var(--mcr-accent), var(--mcr-accent-2));
+	content: "";
+}
+
+.mcr-scope .mcr-card--claim .mcr-amount--xl {
+	position: relative;
+}
+
+.mcr-scope .mcr-card--claim .mcr-amount--xl::before {
+	position: absolute;
+	top: 50%;
+	left: 18px;
+	width: 130px;
+	height: 130px;
+	border-radius: 50%;
+	background: radial-gradient(circle, color-mix(in srgb, var(--mcr-coin-300) 32%, transparent) 0%, transparent 68%);
+	content: "";
+	transform: translateY(-50%);
+	pointer-events: none;
+}
+
+.mcr-scope .mcr-card--claim .mcr-amount--xl > * {
+	position: relative;
+}
+
+/* -------------------------------------------------------------------------
+ * 3. The ad panel
+ *
+ * The same family, a different earn method: the theme's secondary green
+ * and the coin gold, against the brand red of the check-in card.
+ * ---------------------------------------------------------------------- */
+
+.mcr-scope .mcr-section--earn .mcr-section__title {
+	display: inline-flex;
+	gap: 10px;
+	align-items: center;
+}
+
+.mcr-scope .mcr-card--earn {
+	position: relative;
+	overflow: hidden;
+	border-color: color-mix(in srgb, var(--mcr-accent-2) 32%, transparent);
+	background:
+		radial-gradient(120% 130% at 100% 0%, color-mix(in srgb, var(--mcr-coin-300) 16%, transparent) 0%, transparent 58%),
+		var(--mcr-bg-surface);
+}
+
+.mcr-scope .mcr-card--earn::before {
+	position: absolute;
+	inset: 0 0 auto;
+	height: 3px;
+	background: linear-gradient(90deg, var(--mcr-accent-2), var(--mcr-coin-300));
+	content: "";
+}
+
+.mcr-scope .mcr-card--earn .mcr-amount--lg {
+	position: relative;
+}
+
+.mcr-scope .mcr-card--earn .mcr-amount--lg::before {
+	position: absolute;
+	top: 50%;
+	left: 14px;
+	width: 90px;
+	height: 90px;
+	border-radius: 50%;
+	background: radial-gradient(circle, color-mix(in srgb, var(--mcr-coin-300) 38%, transparent) 0%, transparent 70%);
+	content: "";
+	transform: translateY(-50%);
+	pointer-events: none;
+}
+
+.mcr-scope .mcr-card--earn .mcr-amount--lg > * {
+	position: relative;
+}
+
+.mcr-scope .mcr-btn--gold {
+	white-space: normal;
+	text-align: center;
+	border-color: transparent;
+	background: linear-gradient(135deg, var(--mcr-coin-300), var(--mcr-coin-400));
+	color: var(--mcr-coin-ink);
+	box-shadow: 0 6px 16px color-mix(in srgb, var(--mcr-coin-300) 32%, transparent);
+}
+
+.mcr-scope.mcr-scope.mcr-scope .mcr-btn--gold:hover,
+.mcr-scope.mcr-scope.mcr-scope .mcr-btn--gold:focus {
+	background: linear-gradient(135deg, var(--mcr-coin-200), var(--mcr-coin-300));
+	color: var(--mcr-coin-ink);
+}
+
+/* -------------------------------------------------------------------------
+ * 4. The reward calendar
+ *
+ * Three states the reader has to be able to tell apart at a glance:
+ * claimed, available now, and still to come.
+ * ---------------------------------------------------------------------- */
+
+.mcr-scope .mcr-card--calendar .mcr-streak {
+	justify-content: space-between;
+}
+
+.mcr-scope .mcr-streak__day.is-available {
+	border-color: var(--mcr-accent);
+	background: var(--mcr-accent-bg);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--mcr-accent) 12%, transparent);
+}
+
+.mcr-scope .mcr-streak__day.is-available .mcr-streak__dot {
+	background: var(--mcr-accent);
+	color: #fff;
+}
+
+.mcr-scope .mcr-streak__day.is-available .mcr-streak__label {
+	color: var(--mcr-accent);
+	font-weight: 700;
+}
+
+.mcr-scope .mcr-streak__day.is-available {
+	animation: mcr-available-pulse 2.6s ease-in-out infinite;
+}
+
+@keyframes mcr-available-pulse {
+
+	0%,
+	100% {
+		box-shadow: 0 0 0 3px color-mix(in srgb, var(--mcr-accent) 12%, transparent);
+	}
+
+	50% {
+		box-shadow: 0 0 0 6px color-mix(in srgb, var(--mcr-accent) 5%, transparent);
+	}
+}
+
+.mcr-scope .mcr-legend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 18px;
+	margin: 14px 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.mcr-scope .mcr-legend__item {
+	display: inline-flex;
+	gap: 7px;
+	align-items: center;
+	color: var(--mcr-text-secondary);
+	font-size: 11px;
+}
+
+.mcr-scope .mcr-legend__dot {
+	display: inline-block;
+	width: 10px;
+	height: 10px;
+	border: 1px solid var(--mcr-border-light);
+	border-radius: 50%;
+	background: var(--mcr-bg-muted);
+}
+
+.mcr-scope .mcr-legend__dot.is-done {
+	border-color: var(--mcr-success);
+	background: var(--mcr-success);
+}
+
+.mcr-scope .mcr-legend__dot.is-available {
+	border-color: var(--mcr-accent);
+	background: var(--mcr-accent);
+}
+
+.mcr-scope .mcr-legend__dot.is-locked {
+	border-color: var(--mcr-border-light);
+	background: var(--mcr-bg-muted);
+}
+
+.mcr-scope .mcr-legend__dot.is-missed {
+	border-color: var(--mcr-border-light);
+	background: var(--mcr-bg-surface);
+	box-shadow: inset 0 0 0 1px var(--mcr-border-light);
+}
+
+/* -------------------------------------------------------------------------
+ * 5. The theme's own components
+ *
+ * The Madara button is a better button than anything the plugin can
+ * draw, so the call to action uses it when the theme is active. The
+ * plugin's own button stays as the fallback.
+ * ---------------------------------------------------------------------- */
+
+.mcr-scope .mcr-btn--theme {
+	font-family: var(--mcr-font-heading);
+	font-weight: 600;
+}
+
+.mcr-scope .mcr-section__title.c-blog__heading {
+	font-family: var(--mcr-font-heading);
+}
+
+/* -------------------------------------------------------------------------
+ * 6. Responsive
+ * ---------------------------------------------------------------------- */
+
+@media (min-width: 768px) {
+
+	.mcr-scope .mcr-wallet {
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: 24px;
+		padding: 26px 30px;
+	}
+
+	.mcr-scope .mcr-wallet__balance {
+		justify-items: end;
+		text-align: right;
+	}
+
+	.mcr-scope .mcr-wallet__stats {
+		grid-column: 1 / -1;
+	}
+}
+
+@media (min-width: 992px) {
+
+	.mcr-scope .mcr-wallet {
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: center;
+	}
+
+	.mcr-scope .mcr-wallet__stats {
+		grid-column: 1 / -1;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+
+@media (max-width: 767px) {
+
+	.mcr-scope .mcr-wallet {
+		padding: 18px;
+	}
+
+	.mcr-scope .mcr-wallet__stats {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+
+	.mcr-scope .mcr-wallet__stat {
+		padding: 8px 9px;
+	}
+
+	.mcr-scope .mcr-wallet__stat-label {
+		font-size: 10px;
+	}
+
+	.mcr-scope .mcr-wallet__stat-value {
+		font-size: 15px;
+	}
+}
+
+@media (max-width: 480px) {
+
+	.mcr-scope .mcr-wallet__stats {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* -------------------------------------------------------------------------
+ * 7. Motion
+ *
+ * The theme and the plugin both respect a reduced-motion preference, so
+ * the attention pulse and the hover lifts are switched off with it.
+ * ---------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+
+	.mcr-scope .mcr-streak__day.is-available {
+		animation: none;
+	}
+}

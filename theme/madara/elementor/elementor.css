@@ -1,0 +1,429 @@
+/**
+ * Elementor support
+ **/
+ .slider__container.rendered {
+    display: block;
+  }
+  
+  .widget-elementor.background .manga-slider{padding-bottom:30px}
+  .widget-elementor.background{background-color:#f3f3f3; padding-top:10px}
+  .widget-elementor.bordered{border: 3px solid #e1e1e1; padding: 20px}
+  .widget-elementor.bordered.widget_manga-slider{padding-bottom:30px}
+  /*
+  body.manga-page .profile-manga .tab-summary .summary_content_wrap .summary_content {
+    background-color: rgba(255, 255, 255, 0.5);
+    top: 0;
+    bottom: 0;
+    left: 30px;
+    right: 0;
+    padding: 20px 30px 30px;
+    font-size: 0;
+    min-height: 318px;
+}*/
+.elementor-widget-madara-title .post-title h1 {
+    margin-top: 14px;
+    font-size: 20px;
+    font-weight: normal;
+    color: #eb3349;
+  }
+.elementor-widget-madara-title .post-title a {
+    color: #eb3349;
+  }
+.elementor-widget-madara-title .manga-title-badges{
+    float: left
+}
+  
+  .elementor-widget-madara-properties .post-content_item,
+  .elementor-widget-madara-properties .post-status .post-content_item {
+    font-size: 0;
+    margin-bottom: 3px;
+  }
+  .elementor-widget-madara-properties .post-content_item > *,
+  .elementor-widget-madara-properties .post-status .post-content_item > * {
+    display: inline-block;
+    font-size: 14px;
+    vertical-align: top;
+  }
+  .elementor-widget-madara-properties .post-content_item .summary-heading,
+  .elementor-widget-madara-properties .post-status .post-content_item .summary-heading {
+    width: 106px;
+  }
+  .elementor-widget-madara-properties .post-content_item .summary-heading h5,
+  .elementor-widget-madara-properties .post-status .post-content_item .summary-heading h5 {
+    font-size: 14px;
+    margin-top: 3px;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  @media (max-width: 480px) {
+    .elementor-widget-madara-properties .post-content_item .summary-heading h5,
+    .elementor-widget-madara-properties .post-status .post-content_item .summary-heading h5 {
+      margin-bottom: 3px;
+    }
+  }
+  @media (max-width: 480px) {
+    .elementor-widget-madara-properties .post-content_item .summary-heading,
+    .elementor-widget-madara-properties .post-status .post-content_item .summary-heading {
+      width: 100%;
+    }
+  }
+  .elementor-widget-madara-properties .post-content_item .summary-content,
+  .elementor-widget-madara-properties .post-status .post-content_item .summary-content {
+    width: calc(100% - 106px);
+    word-break: break-word;
+  }
+  .elementor-widget-madara-properties .post-content_item .summary-content a:not(:first-child),
+  .elementor-widget-madara-properties .post-status .post-content_item .summary-content a:not(:first-child) {
+    margin-left: 6px;
+  }
+  @media (max-width: 480px) {
+    .elementor-widget-madara-properties .post-content_item .summary-content,
+    .elementor-widget-madara-properties .post-status .post-content_item .summary-content {
+      width: 100%;
+    }
+  }
+  .elementor-widget-madara-properties .post-content_item .summary-content .genres-content,
+  .elementor-widget-madara-properties .post-status .post-content_item .summary-content .genres-content,
+  .elementor-widget-madara-properties .post-content_item .summary-content .artist-content,
+  .elementor-widget-madara-properties .post-status .post-content_item .summary-content .artist-content,
+  .elementor-widget-madara-properties .post-content_item .summary-content .author-content,
+  .elementor-widget-madara-properties .post-status .post-content_item .summary-content .author-content {
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    /* fallback */
+    max-height: calc( 3em );
+    /* fallback */
+  }
+  @media (max-width: 768px) {
+    .elementor-widget-madara-properties .post-content_item,
+    .elementor-widget-madara-properties .post-status .post-content_item {
+      margin-bottom: 10px;
+    }
+  }
+  
+  .elementor-widget-madara-properties .summary_content .post-content,
+  .elementor-widget-madara-properties .summary_content .post-status {
+    font-size: 14px;
+    display: inline-block;
+    vertical-align: top;
+  }
+  .elementor-widget-madara-properties .summary_content .post-content {
+    width: 69%;
+    position: relative;
+    padding-right:10px
+  }
+  .elementor-widget-madara-properties .summary_content .post-status {
+    width: 30%;
+    margin-top: 56px;
+  }
+  .elementor-widget-madara-properties .summary_content .post-status .manga-action {
+    margin: 0 -15px;
+    padding-top: 16px;
+  }
+  .elementor-widget-madara-properties .summary_content .post-status .manga-action:after {
+    display: table;
+    content: "";
+    clear: both;
+  }
+  .elementor-widget-madara-properties .summary_content .post-status .manga-action .count-comment,
+  .elementor-widget-madara-properties .summary_content .post-status .manga-action .add-bookmark {
+    width: 50%;
+    float: left;
+    padding: 0 15px;
+  }
+  .elementor-widget-madara-properties .summary_content .post-status .manga-action .count-comment .action_icon,
+  .elementor-widget-madara-properties .summary_content .post-status .manga-action .add-bookmark .action_icon,
+  .elementor-widget-madara-properties .summary_content .post-status .manga-action .count-comment .action_detail,
+  .elementor-widget-madara-properties .summary_content .post-status .manga-action .add-bookmark .action_detail {
+    text-align: center;
+    line-height: 1.35;
+  }
+  .elementor-widget-madara-properties .summary_content .post-status .manga-action .count-comment .action_icon a,
+  .elementor-widget-madara-properties .summary_content .post-status .manga-action .add-bookmark .action_icon a,
+  .elementor-widget-madara-properties .summary_content .post-status .manga-action .count-comment .action_detail a,
+  .elementor-widget-madara-properties .summary_content .post-status .manga-action .add-bookmark .action_detail a {
+    display: inline-block;
+  }
+  .elementor-widget-madara-properties .summary_content .post-status .manga-action .count-comment .action_icon a i,
+  .elementor-widget-madara-properties .summary_content .post-status .manga-action .add-bookmark .action_icon a i,
+  .elementor-widget-madara-properties .summary_content .post-status .manga-action .count-comment .action_detail a i,
+  .elementor-widget-madara-properties .summary_content .post-status .manga-action .add-bookmark .action_detail a i {
+    font-size: 36px;
+    color: #ec3649;
+  }
+  .elementor-widget-madara-properties .summary_content .post-status .manga-action .count-comment {
+    border-right: 1px solid #e1e1e1;
+  }
+  .elementor-widget-madara-properties .summary_content_wrap:only-child {
+    padding-left: 0;
+  }
+  .elementor-widget-madara-properties .loader-inner {
+    display: none;
+    position: absolute;
+    left: 45px;
+    top: 15px;
+    z-index: 99;
+  }
+  .elementor-widget-madara-properties .loader-inner > div {
+    background-color: #eb3349;
+    width: 10px;
+    height: 10px;
+  }
+  .elementor-widget-madara-properties .post-rating {
+    margin-bottom: 12px;
+    position: relative;
+    transition: opacity ease-in 0.5s;
+  }
+  .elementor-widget-madara-properties .post-rating .post-total-rating i.ion-ios-star,
+  .elementor-widget-madara-properties .post-rating .post-total-rating i.ion-ios-star.rating_current,
+  .elementor-widget-madara-properties .post-rating .post-total-rating i.ion-ios-star-half {
+    color: #ffd900;
+  }
+  .elementor-widget-madara-properties .post-rating .user-rating {
+    position: relative;
+    top: 0;
+    display: none;
+  }
+  .elementor-widget-madara-properties .post-rating .user-rating i.ion-ios-star,
+  .elementor-widget-madara-properties .post-rating .user-rating i.ion-ios-star.rating_current,
+  .elementor-widget-madara-properties .post-rating .user-rating i.ion-ios-star-half {
+    color: #ffd900;
+  }
+  .elementor-widget-madara-properties .post-rating i {
+    font-size: 30px;
+    margin: 0 1px;
+  }
+  .elementor-widget-madara-properties .post-rating i.ion-ios-star,
+  .elementor-widget-madara-properties .post-rating i.ion-ios-star.rating_current,
+  .elementor-widget-madara-properties .post-rating i.ion-ios-star-half {
+    color: #ffd900;
+  }
+  .elementor-widget-madara-properties .post-rating i:hover {
+    cursor: pointer;
+  }
+  .elementor-widget-madara-properties .post-rating span {
+    margin-left: 8px;
+    font-weight: 600;
+    color: #333;
+    font-size: 24px;
+  }
+  .elementor-widget-madara-properties .post-rating:hover .user-rating.allow_vote {
+    display: block;
+  }
+  .elementor-widget-madara-properties .post-rating:hover .post-total-rating.allow_vote {
+    display: none;
+  }
+  @media (max-width: 992px) {
+    .elementor-widget-madara-properties .summary_content {
+      position: relative;
+    }
+  }
+  @media (max-width: 768px) {
+    .elementor-widget-madara-properties .summary_content {
+      left: 0;
+    }
+  }
+  @media (max-width: 992px) {
+    .elementor-widget-madara-properties .summary_content .post-content,
+    .elementor-widget-madara-properties .summary_content .post-status {
+      width: 100%;
+      margin-top: 0;
+    }
+  }
+
+  .elementor-widget-madara-properties .summary_content .post-status .manga-action .count-comment, .elementor-widget-madara-properties .summary_content .post-status .manga-action .add-bookmark{
+    float: left;
+    padding: 0 15px;
+  }
+
+  .elementor-widget-madara-properties .summary_content .post-status .manga-action .count-comment .action_icon, .elementor-widget-madara-properties .summary_content .post-status .manga-action .add-bookmark .action_icon, .elementor-widget-madara-properties .summary_content .post-status .manga-action .count-comment .action_detail, .elementor-widget-madara-properties .summary_content .post-status .manga-action .add-bookmark .action_detail{
+    text-align: center;
+    line-height: 1.35;
+  }
+
+  .elementor-widget-madara-properties .summary_content .post-status .manga-action .count-comment .action_icon a, .elementor-widget-madara-properties .summary_content .post-status .manga-action .add-bookmark .action_icon a, .elementor-widget-madara-properties .summary_content .post-status .manga-action .count-comment .action_detail a, .elementor-widget-madara-properties .summary_content .post-status .manga-action .add-bookmark .action_detail a{
+    display: inline-block
+  }
+
+  .elementor-widget-madara-properties .summary_content .post-status .manga-action .count-comment .action_icon a i, .elementor-widget-madara-properties .summary_content .post-status .manga-action .add-bookmark .action_icon a i, .elementor-widget-madara-properties .summary_content .post-status .manga-action .count-comment .action_detail a i, .elementor-widget-madara-properties .summary_content .post-status .manga-action .add-bookmark .action_detail a i{
+    font-size: 36px;
+    color: #ec3649;
+  }
+  
+  .elementor-widget-madara-properties .summary_content .post-status .manga-action:after{
+    display: table;
+    content: "";
+    clear: both;
+  }
+
+  .elementor-widget-madara-properties #init-links{margin-top:10px}
+
+  /**
+   * Chapters List
+   */
+
+.elementor-widget-madara-chapters .listing-chapters_wrap > ul, .shortcode-manga-chapters .listing-chapters_wrap > ul {
+    padding-left: 0;
+    margin-top: -15px;
+    margin-bottom: 20px;
+  }
+  .elementor-widget-madara-chapters .listing-chapters_wrap > ul li, .shortcode-manga-chapters .listing-chapters_wrap > ul li {
+    list-style: none;
+  }
+  .elementor-widget-madara-chapters .listing-chapters_wrap > ul li a, .shortcode-manga-chapters .listing-chapters_wrap > ul li a {
+    padding: 15px 0;
+    display: inline-block;
+  }
+  .elementor-widget-madara-chapters .listing-chapters_wrap > ul li ul, .shortcode-manga-chapters .listing-chapters_wrap > ul li ul {
+    padding-left: 10px;
+  }
+  .elementor-widget-madara-chapters .listing-chapters_wrap > ul li:hover, .shortcode-manga-chapters .listing-chapters_wrap > ul li:hover {
+    cursor: pointer;
+  }
+  .elementor-widget-madara-chapters .listing-chapters_wrap > ul > li.has-child > i.icon, .shortcode-manga-chapters .listing-chapters_wrap > ul > li.has-child > i.icon {
+    position: absolute;
+    right: 0;
+    top: 15px;
+    font-size: 18px;
+    pointer-events: none;
+  }
+  .elementor-widget-madara-chapters .listing-chapters_wrap > ul > li.has-child > i.icon:before,.shortcode-manga-chapters .listing-chapters_wrap > ul > li.has-child > i.icon:before {
+    line-height: 20px;
+    width: 20px;
+    height: 20px;
+    text-align: center;
+    background-color: #f3f3f3;
+    border-radius: 2px;
+  }
+  .elementor-widget-madara-chapters .listing-chapters_wrap > ul > li.has-child.active > i.icon:before, .shortcode-manga-chapters .listing-chapters_wrap > ul > li.has-child.active > i.icon:before {
+    content: "\f368";
+  }
+  .elementor-widget-madara-chapters .listing-chapters_wrap > ul.main ul.sub-chap, .shortcode-manga-chapters .listing-chapters_wrap > ul.main ul.sub-chap {
+    display: none;
+  }
+  .elementor-widget-madara-chapters .listing-chapters_wrap > ul.main.version-chap .sub-chap > li:before, .shortcode-manga-chapters .listing-chapters_wrap > ul.main.version-chap .sub-chap > li:before {
+    content: "";
+    display: inline-block;
+    width: 3px;
+    height: 100%;
+    background: red;
+    position: absolute;
+    left: -10px;
+  }
+  .elementor-widget-madara-chapters .listing-chapters_wrap > ul.main.version-chap li .wp-manga-chapter a, .shortcode-manga-chapters .listing-chapters_wrap > ul.main.version-chap li .wp-manga-chapter a {
+    padding: 10px 0;
+  }
+  .elementor-widget-madara-chapters .listing-chapters_wrap > ul.main.version-chap li .wp-manga-chapter a:not(:hover), .shortcode-manga-chapters .listing-chapters_wrap > ul.main.version-chap li .wp-manga-chapter a:not(:hover) {
+    color: #888888;
+  }
+  .elementor-widget-madara-chapters .listing-chapters_wrap > ul.main.version-chap li, .shortcode-manga-chapters .listing-chapters_wrap > ul.main.version-chap li {
+    position: relative;
+  }
+  .elementor-widget-madara-chapters .listing-chapters_wrap > ul.main.version-chap li .no-chapter, .shortcode-manga-chapters .listing-chapters_wrap > ul.main.version-chap li .no-chapter {
+    margin-left: 25px;
+  }
+  .elementor-widget-madara-chapters .listing-chapters_wrap > ul.main.version-chap li .chapter-release-date, .shortcode-manga-chapters .listing-chapters_wrap > ul.main.version-chap li .chapter-release-date {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    -webkit-transform: translateY(-50%);
+    -ms-transform: translateY(-50%);
+    -o-transform: translateY(-50%);
+    transform: translateY(-50%);
+    font-size:0.8em;
+    line-height:1em;
+  }
+  @media (max-width: 600px) {
+    .elementor-widget-madara-chapters .listing-chapters_wrap > ul.main.version-chap li .chapter-release-date, .shortcode-manga-chapters .listing-chapters_wrap > ul.main.version-chap li .chapter-release-date {
+      position: relative;
+      top: 0;
+      -webkit-transform: translateY(0);
+      -ms-transform: translateY(0);
+      -o-transform: translateY(0);
+      transform: translateY(0);
+      display: block;
+      margin-bottom: 10px;
+      font-size: 12px;
+    }
+  }
+  .elementor-widget-madara-chapters .listing-chapters_wrap > ul.main.version-chap li:after, .shortcode-manga-chapters .listing-chapters_wrap > ul.main.version-chap li:after {
+    content: "";
+    position: absolute;
+    display: block;
+    height: 1px;
+    background-color: #ebebeb;
+    width: 100%;
+    opacity: 1;
+    visibility: visible;
+    left: 0
+  }
+  body.manga-page.text-ui-light .page-content-listing.single-page .listing-chapters_wrap > ul.main.version-chap li:after, .text-ui-light .shortcode-manga-chapters .listing-chapters_wrap > ul.main.version-chap li:after{
+      background-color: #4d4d4d;
+  }
+  .text-ui-light .page-listing-item.shortcode-manga-chapters.chapter-listing-2 .wp-manga-chapter a{color:#000}
+  .text-ui-light .page-listing-item.shortcode-manga-chapters.chapter-listing-2 .wp-manga-chapter a:hover{color:#eb3349}
+  
+  .elementor-widget-madara-chapters .listing-chapters_wrap > ul.main.version-chap li.has-child.active:after, .shortcode-manga-chapters .listing-chapters_wrap > ul.main.version-chap li.has-child.active:after {
+    opacity: 0;
+    visibility: hidden;
+  }
+  .elementor-widget-madara-chapters .listing-chapters_wrap > ul.main.version-chap > li:last-child:after, .elementor-widget-madara-chapters .listing-chapters_wrap > ul.main.version-chap .sub-chap > li:last-child:after, .shortcode-manga-chapters .listing-chapters_wrap > ul.main.version-chap > li:last-child:after {
+    opacity: 0;
+    visibility: hidden;
+  }
+  .elementor-widget-madara-chapters .listing-chapters_wrap > ul.main.version-chap li .vol-chap > li:after, .shortcode-manga-chapters .listing-chapters_wrap > ul.main.version-chap li .vol-chap > li:after {
+    opacity: 0;
+    visibility: hidden;
+  }
+  .elementor-widget-madara-chapters .listing-chapters_wrap > ul.main.version-chap li .vol-chap .list-chap li:before, .shortcode-manga-chapters .listing-chapters_wrap > ul.main.version-chap li .vol-chap .list-chap li:before {
+    content: "";
+    display: inline-block;
+    width: 3px;
+    height: 100%;
+    background: red;
+    position: absolute;
+    left: -30px;
+  }
+  .elementor-widget-madara-chapters .listing-chapters_wrap > ul.version-chap > li > a,
+  .elementor-widget-madara-chapters .listing-chapters_wrap > ul.vol-chap > li > a, .shortcode-manga-chapters .listing-chapters_wrap > ul.version-chap > li > a, .shortcode-manga-chapters .listing-chapters_wrap > ul.vol-chap > li > a {
+    font-weight: 600;
+  }
+  .elementor-widget-madara-chapters .listing-chapters_wrap > ul.vol-chap > li.has-child > i.icon, .shortcode-manga-chapters .listing-chapters_wrap > ul.vol-chap > li.has-child > i.icon {
+    position: absolute;
+    right: 15px;
+    top: 15px;
+    font-size: 18px;
+  }
+  .elementor-widget-madara-chapters .listing-chapters_wrap > ul.vol-chap > li.has-child > i.icon:before, .shortcode-manga-chapters .listing-chapters_wrap > ul.vol-chap > li.has-child > i.icon:before {
+    line-height: 15px;
+    width: 15px;
+    height: 15px;
+    text-align: center;
+    background-color: #ccc;
+    border-radius: 50%;
+    color: #fff;
+  }
+
+  .elementor-widget-madara-reading .reading-content{text-align: center;}
+  .elementor-widget-madara-reading .reading-content .no-gaps img{margin: 0 auto}
+  .widget-elementor.widget{margin-bottom: 0;}
+.widget-elementor .popular-slider.style-2 .slider__container .slick-list{padding: 0}
+
+.widget-elementor.widget_manga-taxonomies li.bordered{border-bottom: 1px solid #d6d6d6}
+.widget-elementor.widget_manga-taxonomies li.bordered:last-child{border-bottom:none}
+.widget-elementor.widget_manga-listing .page-content-listing{margin: 0 !important}
+.widget-elementor.widget_manga-listing .page-content-listing.auto-cols{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  grid-gap: .5rem;
+}
+body.page .widget-elementor.widget_manga-listing .page-content-listing.auto-cols .page-listing-item{
+  border-bottom: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.elementor-widget-manga-listing .tab-content-wrap{margin-top: 0;}

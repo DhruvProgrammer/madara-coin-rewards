@@ -1,0 +1,31 @@
+# Normalise the text files to LF in the repository and in every checkout.
+# The plugin and the theme are PHP, CSS and JavaScript: they want LF.
+* text=auto eol=lf
+
+# The binary assets must never be touched.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.avif binary
+*.ico binary
+*.bmp binary
+*.psd binary
+
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.eot binary
+
+*.mp4 binary
+*.webm binary
+*.ogg binary
+*.mp3 binary
+*.wav binary
+
+*.zip binary
+*.gz binary
+*.pdf binary
+*.swf binary

@@ -1,0 +1,2548 @@
+# Copyright (C) 2026 Madara Coin & Rewards
+# This file is distributed under the GPL-2.0-or-later license.
+msgid ""
+msgstr ""
+"Project-Id-Version: Madara Coin & Rewards 1.0.0\n"
+"Report-Msgid-Bugs-To: https://example.com/madara-coin-rewards\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Domain: madara-coin-rewards\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+#: includes/Admin/SettingsPage.php:197
+msgid "{\"3\": 5, \"7\": 15, \"30\": 50}"
+msgstr ""
+
+#: templates/balance.php:64
+#: templates/balance.php:118
+#: templates/dashboard.php:116
+msgid "%1$d of %2$d days"
+msgstr ""
+
+#: templates/checkin-compact.php:156
+#: templates/checkin-hero.php:146
+#: templates/checkin.php:318
+#: templates/dashboard-hero.php:229
+#: templates/dashboard-list.php:227
+#: templates/dashboard.php:128
+#: templates/dashboard.php:321
+msgid "%1$s more days to a +%2$s bonus"
+msgstr ""
+
+#: templates/parts/progress.php:35
+msgid "%1$s of %2$s"
+msgstr ""
+
+#: templates/ads.php:183
+msgid "%1$s of %2$s ads remaining today"
+msgstr ""
+
+#: templates/transactions.php:82
+msgid "%1$s of %2$s transactions"
+msgstr ""
+
+#: templates/checkin.php:260
+#: templates/parts/streak.php:74
+msgid "%1$s: claimed, %2$s coins."
+msgstr ""
+
+#: includes/Admin/Admin.php:414
+msgid "%d coins %s user %d."
+msgstr ""
+
+#: templates/balance.php:87
+#: templates/checkin.php:86
+#: templates/dashboard-hero.php:79
+#: templates/dashboard.php:86
+msgid "%d day streak"
+msgstr ""
+
+#: templates/dashboard-list.php:212
+msgid "%d days"
+msgstr ""
+
+#: templates/ads.php:111
+#: templates/dashboard.php:366
+msgid "%d left"
+msgstr ""
+
+#: templates/checkin-hero.php:204
+#: templates/checkin.php:375
+msgid "%d more days to unlock."
+msgstr ""
+
+#: templates/ads.php:106
+#: templates/dashboard.php:361
+msgid "%d watched"
+msgstr ""
+
+#: templates/ads.php:243
+msgid "%s seconds between ads."
+msgstr ""
+
+#: templates/transactions.php:101
+msgid "%s total"
+msgstr ""
+
+#: templates/checkin.php:267
+#: templates/parts/streak.php:87
+msgid "%s: not claimed."
+msgstr ""
+
+#: templates/parts/streak.php:81
+msgid "%s: upcoming."
+msgstr ""
+
+#: templates/checkin.php:147
+msgid "+%s bonus"
+msgstr ""
+
+#: templates/parts/package.php:95
+msgid "+%s bonus coins"
+msgstr ""
+
+#: templates/ads.php:169
+#: templates/checkin-compact.php:93
+#: templates/dashboard.php:231
+msgid "+%s coins"
+msgstr ""
+
+#: includes/Templates/Assets.php:436
+msgid "+%s coins added."
+msgstr ""
+
+#: includes/Templates/Assets.php:435
+msgid "10 seconds left."
+msgstr ""
+
+#: includes/Templates/Assets.php:434
+msgid "60 seconds left."
+msgstr ""
+
+#: includes/Payments/Packages.php:244
+msgid "A package needs a positive coin amount and a positive price."
+msgstr ""
+
+#: includes/Payments/Packages.php:252
+msgid "A package with this id already exists."
+msgstr ""
+
+#: templates/buy-coins.php:180
+msgid "A payment gateway must be enabled before coins can be purchased."
+msgstr ""
+
+#: includes/Admin/Admin.php:477
+msgid "A reason is required to reset a balance."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:900
+msgid "A secret is stored. Leave this field empty to keep it."
+msgstr ""
+
+#: includes/Admin/UsersPage.php:149
+msgid "Actions"
+msgstr ""
+
+#: includes/Admin/PackagesPage.php:148
+#: includes/Admin/PackagesPage.php:136
+msgid "Active"
+msgstr ""
+
+#: includes/Admin/LogsPage.php:37
+msgid "Activity Log"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:153
+msgid "Ad networks"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:108
+msgid "Ad Providers"
+msgstr ""
+
+#: includes/Templates/Templates.php:529
+msgid "Ad reward"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:477
+msgid "Ad reward rate limit"
+msgstr ""
+
+#: templates/dashboard-hero.php:245
+#: templates/dashboard.php:336
+msgid "Ad rewards"
+msgstr ""
+
+#: includes/Rewards/AdSessions.php:127
+#: templates/ads.php:50
+msgid "Ad rewards are currently disabled."
+msgstr ""
+
+#: templates/ads.php:67
+msgid "Ad rewards are not available"
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:159
+#: includes/AdProviders/GenericS2S.php:243
+msgid "Ad rewards are not configured on this site. No coins can be earned from ads right now."
+msgstr ""
+
+#: includes/Admin/PackagesPage.php:57
+msgid "Add / Edit Package"
+msgstr ""
+
+#: templates/buy-coins.php:124
+msgid "Add a package"
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:65
+msgid "Adds a coin package as a WooCommerce product and processes it through the shop checkout. Requires each package to be mapped to a product priced exactly like the package."
+msgstr ""
+
+#: includes/Admin/UsersPage.php:365
+msgid "Adjust Balance"
+msgstr ""
+
+#: includes/Templates/Templates.php:533
+msgid "Admin adjustment"
+msgstr ""
+
+#: templates/ads.php:248
+msgid "Ads must be watched to the end. Rewards are confirmed by the ad provider before coins are added."
+msgstr ""
+
+#: includes/Templates/Assets.php:439
+#: templates/transactions.php:224
+msgid "All %s transactions shown."
+msgstr ""
+
+#: includes/Admin/TransactionsPage.php:42
+msgid "All types"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:277
+msgid "Allow users to buy coin packages."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:169
+msgid "Allow users to check in once per day and earn coins."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:222
+msgid "Allow users to watch ads to earn coins."
+msgstr ""
+
+#: includes/Admin/LogsPage.php:121
+#: includes/Admin/TransactionsPage.php:355
+#: includes/Admin/TransactionsPage.php:191
+#: includes/Admin/UsersPage.php:349
+#: includes/Integrations/Privacy.php:56
+#: includes/Templates/Assets.php:449
+#: templates/dashboard-list.php:171
+#: templates/dashboard-list.php:190
+#: templates/transactions.php:155
+#: templates/transactions.php:181
+msgid "Amount"
+msgstr ""
+
+#: includes/Gateways/Manual.php:249
+msgid "Approved by %s via the manual gateway"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:538
+msgid "Assign WordPress pages to each coin-rewards frontend page."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:312
+msgid "Auto-credit on payment"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:318
+msgid "Automatically credit coins when a payment webhook is verified."
+msgstr ""
+
+#: templates/dashboard.php:208
+msgid "Available"
+msgstr ""
+
+#: templates/ads.php:144
+msgid "Available ads"
+msgstr ""
+
+#: templates/dashboard-hero.php:105
+#: templates/dashboard-list.php:84
+#: templates/dashboard-list.php:65
+#: templates/dashboard.php:159
+#: templates/dashboard.php:79
+msgid "Available balance"
+msgstr ""
+
+#: templates/balance.php:43
+#: templates/balance.php:97
+#: templates/dashboard-hero.php:72
+msgid "available coins"
+msgstr ""
+
+#: includes/Templates/Assets.php:445
+#: templates/buy-coins.php:74
+msgid "Awaiting payment confirmation"
+msgstr ""
+
+#: templates/transactions.php:121
+msgid "Back to the first page"
+msgstr ""
+
+#: includes/Admin/UsersPage.php:146
+#: templates/parts/txn.php:45
+msgid "Balance"
+msgstr ""
+
+#: includes/Integrations/Privacy.php:60
+#: includes/Templates/Assets.php:450
+#: templates/dashboard-list.php:172
+#: templates/dashboard-list.php:193
+#: templates/transactions.php:156
+#: templates/transactions.php:185
+msgid "Balance after"
+msgstr ""
+
+#: includes/Admin/LogsPage.php:122
+#: includes/Admin/TransactionsPage.php:356
+#: includes/Admin/TransactionsPage.php:192
+msgid "Balance After"
+msgstr ""
+
+#: includes/Admin/Admin.php:453
+msgid "Balance already matches the ledger. No changes needed."
+msgstr ""
+
+#: includes/Admin/Admin.php:447
+msgid "Balance reconciled: %1$d corrected to %2$d."
+msgstr ""
+
+#: includes/Templates/Assets.php:437
+msgid "Balance updated. %s coins."
+msgstr ""
+
+#: includes/Admin/DashboardPage.php:72
+msgid "Base check-in reward"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:175
+msgid "Base coins per check-in"
+msgstr ""
+
+#: includes/Admin/PackagesPage.php:134
+msgid "Bonus %"
+msgstr ""
+
+#: templates/checkin-hero.php:200
+#: templates/checkin.php:371
+msgid "Bonus claimed with your streak."
+msgstr ""
+
+#: templates/checkin.php:333
+msgid "Bonus coins are added automatically with the check-in."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:195
+msgid "Bonus coins per streak threshold (JSON map of day => amount)."
+msgstr ""
+
+#: templates/parts/package.php:65
+msgid "Buy %s coins"
+msgstr ""
+
+#: templates/dashboard-hero.php:64
+#: templates/dashboard-list.php:59
+#: templates/dashboard-list.php:135
+#: templates/dashboard.php:70
+#: templates/dashboard.php:258
+#: templates/dashboard.php:264
+msgid "Buy coins"
+msgstr ""
+
+#: includes/Pages.php:51
+msgid "Buy Coins"
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:782
+msgid "Callback IP allowlist (optional)"
+msgstr ""
+
+#: templates/buy-coins.php:197
+msgid "Can I get a refund?"
+msgstr ""
+
+#: templates/dashboard.php:217
+#: templates/dashboard.php:311
+msgid "Check in"
+msgstr ""
+
+#: templates/checkin-compact.php:137
+#: templates/checkin-hero.php:128
+#: templates/checkin.php:201
+msgid "Check-in is not available right now."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:463
+msgid "Check-in rate limit"
+msgstr ""
+
+#: templates/checkin-compact.php:118
+#: templates/checkin-hero.php:108
+msgid "Check-in rewards are paused."
+msgstr ""
+
+#: templates/checkin.php:172
+msgid "Check-in rewards are paused. Please check back later."
+msgstr ""
+
+#: includes/Rewards/CheckInPolicy.php:133
+msgid "Check-in streak bonus"
+msgstr ""
+
+#: includes/Admin/DashboardPage.php:136
+msgid "Check-ins Today"
+msgstr ""
+
+#: includes/Admin/Admin.php:312
+msgid "Checked %1$d balances, %2$d were corrected."
+msgstr ""
+
+#: includes/Templates/Assets.php:420
+#: templates/checkin-compact.php:87
+#: templates/checkin-hero.php:110
+#: templates/checkin.php:175
+#: templates/dashboard-hero.php:187
+#: templates/dashboard.php:210
+msgid "Checked in today"
+msgstr ""
+
+#: includes/Templates/Assets.php:423
+msgid "Checking with the provider..."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:534
+msgid "Choose frontend template layouts and appearance options."
+msgstr ""
+
+#: templates/checkin-compact.php:35
+#: templates/checkin-hero.php:37
+#: templates/checkin.php:74
+#: templates/dashboard-hero.php:52
+#: templates/dashboard-list.php:47
+#: templates/dashboard.php:58
+msgid "Claim %s coins"
+msgstr ""
+
+#: templates/dashboard-hero.php:211
+msgid "Claim on the check-in page"
+msgstr ""
+
+#: templates/dashboard.php:214
+msgid "Claim once a day and keep your streak alive."
+msgstr ""
+
+#: templates/checkin.php:52
+msgid "Claim your first daily reward to start a streak."
+msgstr ""
+
+#: templates/checkin.php:67
+msgid "Claim your first daily reward to start a streak. Days %s unlock bonus coins."
+msgstr ""
+
+#: includes/Templates/Assets.php:411
+msgid "Claiming..."
+msgstr ""
+
+#: includes/Admin/ToolsPage.php:91
+msgid "Clear Settings"
+msgstr ""
+
+#: includes/Admin/ToolsPage.php:76
+msgid "Clears plugin settings and transients. Database tables are preserved unless you remove them via uninstall.php."
+msgstr ""
+
+#: includes/Templates/Assets.php:454
+msgid "Close"
+msgstr ""
+
+#: includes/Integrations/Profile.php:50
+msgid "Coin balance"
+msgstr ""
+
+#: includes/Pages.php:52
+msgid "Coin History"
+msgstr ""
+
+#: includes/Gateways/Stripe.php:224
+#: includes/Templates/Shortcodes.php:615
+#: templates/parts/package.php:33
+msgid "Coin package"
+msgstr ""
+
+#: includes/Admin/PackagesPage.php:80
+msgid "Coin Package Editor"
+msgstr ""
+
+#: includes/Gateways/Gateway.php:841
+msgid "Coin package purchase"
+msgstr ""
+
+#: includes/Gateways/Stripe.php:596
+msgid "Coin package purchase (Stripe)"
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:519
+msgid "Coin package purchase (WooCommerce)"
+msgstr ""
+
+#: templates/buy-coins.php:84
+msgid "Coin packages"
+msgstr ""
+
+#: includes/Admin/PackagesPage.php:53
+msgid "Coin Packages"
+msgstr ""
+
+#: templates/buy-coins.php:135
+msgid "Coin packages will appear here once the site owner adds them."
+msgstr ""
+
+#: includes/Templates/Templates.php:530
+msgid "Coin purchase"
+msgstr ""
+
+#: includes/Admin/DashboardPage.php:60
+#: includes/Admin/SettingsPage.php:94
+#: includes/Admin/SettingsPage.php:707
+msgid "Coin Purchases"
+msgstr ""
+
+#: includes/Payments/Orders.php:64
+#: templates/buy-coins.php:97
+msgid "Coin purchases are currently disabled."
+msgstr ""
+
+#: includes/Integrations/Privacy.php:44
+msgid "Coin transactions"
+msgstr ""
+
+#: includes/Integrations/Profile.php:53
+#: includes/Templates/Assets.php:451
+#: includes/Templates/Templates.php:609
+#: includes/Widgets/BalanceWidget.php:88
+#: templates/checkin.php:384
+#: templates/parts/txn.php:42
+#: templates/transactions.php:183
+msgid "coins"
+msgstr ""
+
+#: includes/Admin/PackagesPage.php:132
+msgid "Coins"
+msgstr ""
+
+#: templates/parts/package.php:51
+msgid "Coins are added after payment confirmation"
+msgstr ""
+
+#: templates/buy-coins.php:61
+msgid "Coins are added as soon as payment is confirmed."
+msgstr ""
+
+#: templates/buy-coins.php:194
+msgid "Coins are added as soon as the payment provider confirms the payment. This usually takes a few seconds."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:234
+msgid "Coins awarded for each verified ad view."
+msgstr ""
+
+#: templates/transactions.php:58
+msgid "Coins earned"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:181
+msgid "Coins earned for a standard daily check-in."
+msgstr ""
+
+#: includes/Admin/DashboardPage.php:116
+msgid "Coins in Circulation"
+msgstr ""
+
+#: includes/Admin/DashboardPage.php:76
+#: includes/Admin/SettingsPage.php:228
+msgid "Coins per ad"
+msgstr ""
+
+#: includes/Templates/Assets.php:452
+#: templates/parts/txn.php:42
+#: templates/transactions.php:183
+msgid "coins spent"
+msgstr ""
+
+#: templates/transactions.php:69
+msgid "Coins spent"
+msgstr ""
+
+#: templates/buy-coins.php:202
+msgid "Coins stay on your account until you spend them. There is no expiry date."
+msgstr ""
+
+#: templates/ads.php:125
+msgid "Come back tomorrow."
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:784
+msgid "Comma or line separated IP addresses the network calls from. Best effort behind proxies — signature verification remains the real gate. Leave empty to allow all."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:325
+msgid "Compact"
+msgstr ""
+
+#: includes/Templates/Assets.php:443
+msgid "Complete the payment with your selected method. Coins are added after confirmation."
+msgstr ""
+
+#: includes/Integrations/Profile.php:73
+msgid "Completed today"
+msgstr ""
+
+#: includes/Admin/DashboardPage.php:69
+msgid "Configuration"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:530
+msgid "Configure coin package purchases and payment gateways."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:526
+msgid "Configure rewarded ad watching and limits."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:157
+msgid "Configure the ad networks that reward a verified view with coins."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:735
+msgid "Configure the ad networks that reward a verified view with coins. A secret is encrypted at rest and is never shown back, so leave the field empty to keep the stored value."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:522
+msgid "Configure the daily check-in reward and streak bonuses."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:148
+msgid "Configure the payment gateways that can be used to buy coins."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:726
+msgid "Configure the payment gateways that can be used to buy coins. A secret is encrypted at rest and is never shown back, so leave the field empty to keep the stored value."
+msgstr ""
+
+#: includes/Admin/DashboardPage.php:88
+msgid "Configured packages"
+msgstr ""
+
+#: includes/Admin/PackagesPage.php:66
+msgid "Configured Packages"
+msgstr ""
+
+#: includes/Admin/ToolsPage.php:84
+msgid "Confirm"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:256
+msgid "Cooldown between ads (seconds)"
+msgstr ""
+
+#: includes/Ledger.php:424
+msgid "Could not commit the transaction."
+msgstr ""
+
+#: includes/Ledger.php:290
+msgid "Could not record the transaction."
+msgstr ""
+
+#: includes/Rewards/CheckIn.php:311
+msgid "Could not record your check-in. Please try again."
+msgstr ""
+
+#: includes/Rewards/AdSessions.php:229
+msgid "Could not start the ad session. Please try again."
+msgstr ""
+
+#: includes/Ledger.php:383
+msgid "Could not update the balance."
+msgstr ""
+
+#: includes/Gateways/Stripe.php:996
+msgid "Create a webhook endpoint in Stripe pointing to "
+msgstr ""
+
+#: includes/Templates/Templates.php:731
+msgid "Create an account"
+msgstr ""
+
+#: includes/Gateways/Manual.php:53
+msgid "Creates a pending order and grants coins only after a site administrator confirms the payment received by bank transfer, cash or any off-site provider."
+msgstr ""
+
+#: includes/Gateways/Manual.php:434
+msgid "Creates pending orders for buyers; an administrator confirms each payment in the Payments screen before coins are granted."
+msgstr ""
+
+#: includes/Admin/Admin.php:410
+msgid "credited to"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:283
+#: includes/Gateways/Manual.php:439
+#: includes/Gateways/Stripe.php:1000
+msgid "Currency"
+msgstr ""
+
+#: includes/Gateways/Gateway.php:526
+#: includes/Gateways/Stripe.php:195
+msgid "Currency mismatch between package and gateway."
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:168
+msgid "Currency mismatch between the coin package and the shop currency."
+msgstr ""
+
+#: includes/Admin/DashboardPage.php:80
+msgid "Daily ad limit"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:242
+msgid "Daily ad limit per user"
+msgstr ""
+
+#: templates/ads.php:234
+msgid "Daily cap: %s ads."
+msgstr ""
+
+#: includes/Integrations/Profile.php:69
+#: includes/Templates/Templates.php:527
+#: templates/checkin-compact.php:71
+#: templates/checkin.php:80
+#: templates/dashboard-hero.php:179
+#: templates/dashboard-list.php:129
+#: templates/dashboard.php:206
+msgid "Daily check-in"
+msgstr ""
+
+#: includes/Admin/DashboardPage.php:52
+#: includes/Admin/SettingsPage.php:80
+#: includes/Admin/SettingsPage.php:705
+msgid "Daily Check-in"
+msgstr ""
+
+#: includes/Rewards/CheckIn.php:225
+#: templates/checkin-compact.php:46
+#: templates/checkin-hero.php:48
+#: templates/checkin.php:100
+msgid "Daily check-in is currently disabled."
+msgstr ""
+
+#: includes/Rewards/CheckInPolicy.php:132
+msgid "Daily check-in reward"
+msgstr ""
+
+#: includes/Templates/Assets.php:429
+#: templates/ads.php:79
+#: templates/ads.php:163
+#: templates/ads.php:203
+msgid "Daily limit reached"
+msgstr ""
+
+#: includes/Rewards/CheckIn.php:386
+msgid "Daily reward claimed! Come back tomorrow to keep your streak."
+msgstr ""
+
+#: includes/Pages.php:48
+msgid "Daily Rewards"
+msgstr ""
+
+#: includes/Admin/Admin.php:82
+#: includes/Admin/Admin.php:83
+#: includes/Admin/DashboardPage.php:44
+#: includes/Admin/DashboardPage.php:64
+msgid "Dashboard"
+msgstr ""
+
+#: includes/Admin/LogsPage.php:118
+#: includes/Admin/TransactionsPage.php:351
+#: includes/Admin/TransactionsPage.php:188
+#: includes/Integrations/Privacy.php:68
+#: templates/dashboard-list.php:169
+#: templates/dashboard-list.php:182
+#: templates/transactions.php:152
+msgid "Date"
+msgstr ""
+
+#: templates/balance.php:54
+#: templates/balance.php:59
+#: templates/balance.php:108
+#: templates/balance.php:113
+#: templates/checkin-hero.php:61
+#: templates/checkin-hero.php:186
+#: templates/checkin.php:360
+#: templates/dashboard.php:106
+#: templates/dashboard.php:111
+msgid "Day %d"
+msgstr ""
+
+#: templates/checkin-compact.php:77
+#: templates/checkin-hero.php:79
+#: templates/checkin.php:133
+#: templates/dashboard-hero.php:197
+msgid "Day %d of your streak"
+msgstr ""
+
+#: includes/Admin/UsersPage.php:357
+msgid "Deduct (debit)"
+msgstr ""
+
+#: includes/Admin/Admin.php:410
+msgid "deducted from"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:324
+#: includes/Templates/Templates.php:152
+#: includes/Templates/Templates.php:161
+msgid "Default"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:301
+msgid "Default gateway used when no gateway is selected at checkout."
+msgstr ""
+
+#: includes/Admin/PackagesPage.php:101
+msgid "Define coin packages users can purchase. Each package maps a price to a coin amount with an optional bonus percent."
+msgstr ""
+
+#: includes/Templates/Assets.php:448
+#: templates/transactions.php:154
+#: templates/transactions.php:180
+msgid "Description"
+msgstr ""
+
+#: includes/Admin/DashboardPage.php:53
+#: includes/Admin/DashboardPage.php:57
+#: includes/Admin/DashboardPage.php:61
+#: includes/Admin/DashboardPage.php:65
+msgid "Disabled"
+msgstr ""
+
+#: includes/Templates/Assets.php:453
+msgid "Dismiss"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:379
+msgid "Display streak and progress bars on frontend pages."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:415
+msgid "Display the breadcrumb navigation on coin-rewards pages."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:391
+msgid "Display the check-in streak calendar on frontend pages."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:403
+msgid "Display the theme sidebar on coin-rewards pages."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:367
+msgid "Display the user balance summary on frontend pages."
+msgstr ""
+
+#: templates/buy-coins.php:201
+msgid "Do coins expire?"
+msgstr ""
+
+#: includes/Gateways/Stripe.php:746
+msgid "Duplicate webhook delivery."
+msgstr ""
+
+#: templates/ads.php:131
+msgid "Each verified ad adds %1$s coins. Wait %2$s seconds between ads."
+msgstr ""
+
+#: templates/dashboard-hero.php:277
+#: templates/dashboard.php:379
+msgid "Each verified ad adds %s coins."
+msgstr ""
+
+#: templates/balance.php:74
+#: templates/balance.php:129
+#: templates/dashboard-hero.php:47
+#: templates/dashboard-hero.php:159
+#: templates/dashboard-list.php:42
+#: templates/dashboard-list.php:156
+#: templates/dashboard.php:53
+#: templates/dashboard.php:289
+#: templates/transactions.php:138
+msgid "Earn coins"
+msgstr ""
+
+#: templates/dashboard-hero.php:85
+#: templates/dashboard.php:138
+msgid "Earn your first coins with a daily check-in."
+msgstr ""
+
+#: includes/Admin/PackagesPage.php:113
+msgid "Edit the packages as a JSON array. Each item: id, title, coins, price, currency, badge, active, sort_order, bonus_percent, limit."
+msgstr ""
+
+#: includes/Admin/UsersPage.php:260
+msgid "Edit User"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:216
+msgid "Enable ad rewards"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:271
+msgid "Enable coin purchases"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:163
+msgid "Enable daily check-in"
+msgstr ""
+
+#: includes/Gateways/Manual.php:432
+msgid "Enable manual purchases"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:203
+msgid "Enable streak tracking"
+msgstr ""
+
+#: includes/Gateways/Stripe.php:975
+msgid "Enable Stripe"
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:664
+msgid "Enable WooCommerce bridge"
+msgstr ""
+
+#: includes/Admin/DashboardPage.php:53
+#: includes/Admin/DashboardPage.php:57
+#: includes/Admin/DashboardPage.php:61
+#: includes/Admin/DashboardPage.php:65
+msgid "Enabled"
+msgstr ""
+
+#: includes/Integrations/Privacy.php:130
+msgid "Erased"
+msgstr ""
+
+#: includes/Admin/LogsPage.php:39
+msgid "Every balance change is recorded in the append-only ledger. This view shows administrative adjustments and system events."
+msgstr ""
+
+#: includes/Admin/TransactionsPage.php:83
+msgid "Export CSV"
+msgstr ""
+
+#: includes/Admin/ToolsPage.php:65
+msgid "Export Data"
+msgstr ""
+
+#: includes/Admin/ToolsPage.php:66
+msgid "Export plugin data for backup or migration."
+msgstr ""
+
+#: includes/Admin/ToolsPage.php:72
+msgid "Export Settings"
+msgstr ""
+
+#: includes/Admin/DashboardPage.php:49
+msgid "Feature Status"
+msgstr ""
+
+#: includes/Admin/TransactionsPage.php:57
+msgid "Filter"
+msgstr ""
+
+#: includes/Admin/TransactionsPage.php:48
+msgid "From"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:144
+msgid "Gateways"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:929
+msgid "Generic server-to-server"
+msgstr ""
+
+#: includes/Admin/UsersPage.php:355
+msgid "Grant (credit)"
+msgstr ""
+
+#: includes/Admin/UsersPage.php:337
+msgid "Grant / Deduct Coins"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:346
+msgid "Grid columns"
+msgstr ""
+
+#: templates/parts/countdown.php:37
+msgid "h"
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:763
+msgid "Header carrying a unix timestamp for the 300 second replay window; leave empty to disable that check. Default: "
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:756
+msgid "Header carrying the HMAC. Default: "
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:91
+msgid "High-trust rewarded ads: the ad network itself calls your site after a real ad completion and the callback is HMAC-signed. Requires a network that supports server-to-server callbacks."
+msgstr ""
+
+#: templates/balance.php:130
+#: templates/buy-coins.php:57
+#: templates/dashboard-hero.php:90
+#: templates/dashboard-list.php:70
+msgid "History"
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:770
+msgid "How old a signed callback may be. Default: 300 (Stripe-style ±5 minutes)."
+msgstr ""
+
+#: includes/Admin/PackagesPage.php:130
+msgid "ID"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:429
+msgid "ID of the WordPress page assigned to "
+msgstr ""
+
+#: templates/transactions.php:54
+msgid "In"
+msgstr ""
+
+#: includes/Admin/PackagesPage.php:148
+msgid "Inactive"
+msgstr ""
+
+#: includes/Admin/Admin.php:290
+#: includes/Admin/Admin.php:332
+#: includes/Admin/Admin.php:370
+#: includes/Admin/Admin.php:432
+#: includes/Admin/Admin.php:466
+#: includes/Admin/Admin.php:508
+#: includes/Admin/TransactionsPage.php:276
+msgid "Insufficient permissions."
+msgstr ""
+
+#: includes/Ledger.php:123
+#: includes/Ledger.php:150
+#: includes/Ledger.php:196
+#: includes/Rewards/AdRewardPolicy.php:314
+msgid "Invalid coin amount."
+msgstr ""
+
+#: includes/Admin/Admin.php:389
+msgid "Invalid operation."
+msgstr ""
+
+#: includes/Gateways/Manual.php:216
+msgid "Invalid security token. Reload the page and try again."
+msgstr ""
+
+#: includes/Ledger.php:129
+#: includes/Ledger.php:202
+msgid "Invalid transaction type."
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:206
+#: includes/Ledger.php:117
+#: includes/Ledger.php:190
+#: includes/Ledger.php:593
+#: includes/Rewards/AdRewardPolicy.php:92
+#: includes/Rewards/AdRewardPolicy.php:195
+#: includes/Rewards/AdSessions.php:264
+#: includes/Rewards/CheckInPolicy.php:74
+msgid "Invalid user."
+msgstr ""
+
+#: includes/Gateways/Stripe.php:436
+msgid "Invalid webhook request."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:289
+msgid "ISO 4217 currency code used for coin packages."
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:777
+msgid "JSON field of the callback carrying the network transaction id. Default: transaction_id."
+msgstr ""
+
+#: includes/Integrations/Profile.php:57
+#: templates/dashboard-hero.php:116
+#: templates/dashboard-list.php:95
+#: templates/dashboard.php:170
+msgid "Lifetime earned"
+msgstr ""
+
+#: includes/Admin/DashboardPage.php:121
+#: includes/Admin/UsersPage.php:147
+msgid "Lifetime Earned"
+msgstr ""
+
+#: includes/Integrations/Profile.php:61
+#: templates/dashboard-hero.php:125
+#: templates/dashboard-list.php:104
+#: templates/dashboard.php:179
+msgid "Lifetime spent"
+msgstr ""
+
+#: includes/Admin/DashboardPage.php:126
+#: includes/Admin/UsersPage.php:148
+msgid "Lifetime Spent"
+msgstr ""
+
+#: templates/ads.php:226
+msgid "Limits"
+msgstr ""
+
+#: templates/transactions.php:204
+#: templates/transactions.php:208
+msgid "Load more"
+msgstr ""
+
+#: includes/Templates/Assets.php:438
+#: templates/parts/loading.php:24
+msgid "Loading..."
+msgstr ""
+
+#: includes/Widgets/BalanceWidget.php:56
+msgid "Log in to see your coin balance."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:439
+msgid "Log IP addresses"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:451
+msgid "Log user agents"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:504
+msgid "Login prompt"
+msgstr ""
+
+#: includes/Admin/Admin.php:127
+#: includes/Admin/Admin.php:128
+msgid "Logs"
+msgstr ""
+
+#: templates/parts/countdown.php:42
+msgid "m"
+msgstr ""
+
+#: includes/Installer.php:279
+msgid "Madara Coin & Rewards detected the %s storage engine. Coin balances require InnoDB for transactional safety. Please convert the mcr_ tables to InnoDB."
+msgstr ""
+
+#: madara-coin-rewards.php:112
+msgid "Madara Coin & Rewards requires PHP %s or newer. The plugin is inactive."
+msgstr ""
+
+#: madara-coin-rewards.php:130
+msgid "Madara Coin & Rewards requires WordPress %s or newer. The plugin is inactive."
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:530
+msgid "Madara Coin & Rewards: %s coins credited."
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:258
+msgid "Madara Coin & Rewards: coin package order (%s coins) created."
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:527
+msgid "Madara Coin & Rewards: coins for this order were already credited."
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:449
+msgid "Madara Coin & Rewards: currency mismatch. Coins NOT credited."
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:471
+msgid "Madara Coin & Rewards: order buyer mismatch. Coins NOT credited."
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:423
+msgid "Madara Coin & Rewards: price mismatch (expected %1$s, found %2$s minor units). Coins NOT credited."
+msgstr ""
+
+#: includes/Widgets/BalanceWidget.php:28
+msgid "Madara Coin Balance"
+msgstr ""
+
+#: includes/Admin/Admin.php:69
+#: includes/Admin/Admin.php:70
+#: includes/Integrations/Profile.php:47
+#: includes/Plugin.php:140
+#: includes/Plugin.php:155
+msgid "Madara Coins"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:928
+msgid "Manual"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:303
+msgid "Manual (admin-marked paid)"
+msgstr ""
+
+#: includes/Gateways/Manual.php:46
+msgid "Manual confirmation"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:483
+msgid "Maximum ad attempts per user per hour."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:469
+msgid "Maximum check-in attempts per user per hour."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:248
+msgid "Maximum number of ads a user can watch per day."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:262
+msgid "Minimum seconds between two ad reward grants."
+msgstr ""
+
+#: templates/parts/package.php:58
+msgid "Most popular"
+msgstr ""
+
+#: includes/Gateways/Manual.php:442
+#: includes/Gateways/Stripe.php:1003
+msgid "Must match the currency of the coin package being sold. Clear to use the site currency."
+msgstr ""
+
+#: includes/Pages.php:49
+msgid "My Coins"
+msgstr ""
+
+#: templates/transactions.php:76
+msgid "Net"
+msgstr ""
+
+#: templates/checkin-hero.php:65
+msgid "New streak"
+msgstr ""
+
+#: includes/Admin/LogsPage.php:184
+#: includes/Admin/TransactionsPage.php:254
+msgid "Next"
+msgstr ""
+
+#: includes/Templates/Assets.php:430
+msgid "Next ad in"
+msgstr ""
+
+#: templates/ads.php:193
+msgid "Next ad in %s seconds after a reward."
+msgstr ""
+
+#: includes/Templates/Assets.php:431
+#: templates/checkin-compact.php:120
+#: templates/checkin-hero.php:111
+#: templates/checkin.php:178
+#: templates/dashboard-hero.php:207
+msgid "Next check-in in"
+msgstr ""
+
+#: includes/Admin/LogsPage.php:108
+msgid "No activity found."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:786
+msgid "No ad providers are registered."
+msgstr ""
+
+#: templates/ads.php:267
+msgid "No ad rewards yet"
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:169
+msgid "No ad units are configured for this provider."
+msgstr ""
+
+#: templates/checkin.php:296
+msgid "No check-ins yet"
+msgstr ""
+
+#: templates/buy-coins.php:134
+msgid "No coin packages available"
+msgstr ""
+
+#: includes/Admin/PackagesPage.php:123
+msgid "No packages configured yet."
+msgstr ""
+
+#: includes/Payments/Orders.php:73
+msgid "No payment gateway is available. Please contact the site administrator."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:747
+msgid "No payment gateways are registered."
+msgstr ""
+
+#: templates/buy-coins.php:111
+msgid "No payment method is available right now, so coins cannot be purchased."
+msgstr ""
+
+#: templates/checkin.php:202
+msgid "No reward is configured for today. Please check back later."
+msgstr ""
+
+#: templates/checkin-hero.php:165
+#: templates/checkin.php:338
+msgid "No streak bonuses are configured."
+msgstr ""
+
+#: includes/Admin/TransactionsPage.php:178
+msgid "No transactions found."
+msgstr ""
+
+#: templates/transactions.php:117
+msgid "No transactions on this page"
+msgstr ""
+
+#: templates/dashboard-hero.php:154
+#: templates/dashboard-list.php:152
+#: templates/dashboard.php:284
+#: templates/transactions.php:134
+msgid "No transactions yet"
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:155
+msgid "No WooCommerce product is mapped to this coin package. Map it in the settings first."
+msgstr ""
+
+#: includes/Integrations/Profile.php:75
+msgid "Not claimed yet today"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:136
+#: includes/Admin/SettingsPage.php:711
+#: includes/Templates/Assets.php:455
+#: includes/Templates/Templates.php:930
+msgid "Notifications"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:352
+msgid "Number of columns in grid-based layouts."
+msgstr ""
+
+#: templates/checkin-compact.php:172
+#: templates/checkin-hero.php:226
+#: templates/checkin.php:402
+msgid "One check-in per day. Rewards reset at midnight (%s). Streaks continue until a day is missed."
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:673
+msgid "One mapping per line, format: package_id=product_id (e.g. starter=1042). Each product must be a simple, virtual product priced exactly like its package; a product price that differs makes the package unsellable by design."
+msgstr ""
+
+#: templates/parts/package.php:50
+msgid "One-time purchase"
+msgstr ""
+
+#: templates/buy-coins.php:86
+msgid "One-time purchase. No subscription."
+msgstr ""
+
+#: includes/Gateways/Manual.php:399
+msgid "Only paid payments can be refunded."
+msgstr ""
+
+#: includes/Gateways/Manual.php:347
+msgid "Only pending payments can be rejected."
+msgstr ""
+
+#: templates/dashboard-hero.php:180
+msgid "Open check-in"
+msgstr ""
+
+#: includes/Admin/UsersPage.php:353
+msgid "Operation"
+msgstr ""
+
+#: includes/Rest.php:362
+msgid "Order not found."
+msgstr ""
+
+#: templates/transactions.php:65
+msgid "Out"
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:671
+msgid "Package → product mapping"
+msgstr ""
+
+#: includes/Admin/Admin.php:100
+#: includes/Admin/Admin.php:101
+#: includes/Admin/PackagesPage.php:87
+msgid "Packages"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:122
+#: includes/Admin/SettingsPage.php:709
+msgid "Page Assignments"
+msgstr ""
+
+#: templates/buy-coins.php:169
+msgid "Payment"
+msgstr ""
+
+#: includes/Templates/Shortcodes.php:278
+msgid "Payment cancelled"
+msgstr ""
+
+#: includes/Templates/Assets.php:444
+#: includes/Templates/Shortcodes.php:279
+msgid "Payment cancelled. You have not been charged."
+msgstr ""
+
+#: includes/Templates/Shortcodes.php:284
+msgid "Payment failed"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:295
+msgid "Payment gateway"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:101
+msgid "Payment Gateways"
+msgstr ""
+
+#: includes/Templates/Shortcodes.php:290
+msgid "Payment received"
+msgstr ""
+
+#: includes/Gateways/Gateway.php:974
+msgid "Payment refunded"
+msgstr ""
+
+#: templates/buy-coins.php:38
+msgid "Payment status"
+msgstr ""
+
+#: templates/buy-coins.php:110
+msgid "Payments are not configured"
+msgstr ""
+
+#: templates/buy-coins.php:175
+msgid "Payments are processed by our payment provider. You will be redirected to complete the payment."
+msgstr ""
+
+#: templates/buy-coins.php:68
+msgid "Pending payment"
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:748
+msgid "Placement ID"
+msgstr ""
+
+#: includes/Payments/Orders.php:60
+msgid "Please log in to buy coins."
+msgstr ""
+
+#: includes/Rewards/AdSessions.php:399
+msgid "Please log in to claim rewards."
+msgstr ""
+
+#: includes/Rewards/CheckIn.php:221
+msgid "Please log in to claim your daily reward."
+msgstr ""
+
+#: includes/Rewards/AdSessions.php:123
+msgid "Please log in to watch ads and earn coins."
+msgstr ""
+
+#: includes/Rewards/AdRewardPolicy.php:144
+msgid "Please wait %d seconds before watching another ad."
+msgstr ""
+
+#: includes/Admin/Admin.php:527
+msgid "Plugin settings cleared. Database tables are preserved unless you remove them via uninstall.php."
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:788
+msgid "Postback URL for the network"
+msgstr ""
+
+#: includes/Admin/LogsPage.php:161
+#: includes/Admin/TransactionsPage.php:231
+msgid "Previous"
+msgstr ""
+
+#: includes/Admin/PackagesPage.php:133
+msgid "Price"
+msgstr ""
+
+#: includes/Gateways/Stripe.php:982
+msgid "Publishable key"
+msgstr ""
+
+#: includes/Templates/Templates.php:531
+msgid "Purchase bonus"
+msgstr ""
+
+#: includes/Admin/DashboardPage.php:84
+msgid "Purchase currency"
+msgstr ""
+
+#: includes/Admin/PackagesPage.php:135
+msgid "Purchased"
+msgstr ""
+
+#: includes/Integrations/Profile.php:65
+#: templates/dashboard-hero.php:134
+#: templates/dashboard-list.php:113
+#: templates/dashboard.php:188
+msgid "Purchased coins"
+msgstr ""
+
+#: templates/buy-coins.php:178
+msgid "Purchases are paused, so no payment can be started right now."
+msgstr ""
+
+#: templates/buy-coins.php:188
+msgid "Questions"
+msgstr ""
+
+#: templates/dashboard-list.php:125
+#: templates/dashboard.php:200
+msgid "Quick actions"
+msgstr ""
+
+#: templates/checkin-hero.php:192
+#: templates/checkin.php:365
+msgid "Reached"
+msgstr ""
+
+#: includes/Templates/Assets.php:432
+msgid "Ready to claim."
+msgstr ""
+
+#: includes/Admin/LogsPage.php:123
+#: includes/Admin/ToolsPage.php:58
+#: includes/Admin/TransactionsPage.php:357
+#: includes/Admin/TransactionsPage.php:193
+#: includes/Admin/UsersPage.php:361
+#: includes/Integrations/Privacy.php:64
+msgid "Reason"
+msgstr ""
+
+#: includes/Admin/ToolsPage.php:42
+msgid "Recalculate All Balances"
+msgstr ""
+
+#: includes/Admin/ToolsPage.php:35
+msgid "Recalculate Balances"
+msgstr ""
+
+#: templates/dashboard-hero.php:145
+#: templates/dashboard-list.php:143
+#: templates/dashboard-list.php:166
+#: templates/dashboard.php:274
+msgid "Recent activity"
+msgstr ""
+
+#: templates/ads.php:256
+msgid "Recent ad rewards"
+msgstr ""
+
+#: templates/checkin.php:218
+msgid "Recent check-ins"
+msgstr ""
+
+#: includes/Admin/ToolsPage.php:36
+msgid "Recomputes every user balance from the append-only ledger and fixes any divergence."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:445
+msgid "Record IP addresses in the transaction ledger (audit only)."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:457
+msgid "Record user agents in the transaction ledger (audit only)."
+msgstr ""
+
+#: includes/Gateways/Stripe.php:88
+msgid "Redirects the buyer to a Stripe-hosted checkout and credits coins only after Stripe confirms the payment via a signed webhook."
+msgstr ""
+
+#: includes/Templates/Templates.php:535
+msgid "Referral"
+msgstr ""
+
+#: includes/Templates/Templates.php:534
+msgid "Refund"
+msgstr ""
+
+#: templates/buy-coins.php:198
+msgid "Refunds follow the policy of the payment provider. Contact the site owner if a payment was taken but your coins were not added."
+msgstr ""
+
+#: includes/Gateways/Manual.php:337
+msgid "Rejected by administrator"
+msgstr ""
+
+#: includes/Templates/Assets.php:419
+msgid "Reload page"
+msgstr ""
+
+#: includes/Admin/TransactionsPage.php:58
+msgid "Reset"
+msgstr ""
+
+#: includes/Admin/ToolsPage.php:45
+msgid "Reset a User Balance"
+msgstr ""
+
+#: includes/Admin/ToolsPage.php:62
+msgid "Reset Balance to Zero"
+msgstr ""
+
+#: includes/Admin/Admin.php:487
+msgid "Reset to zero"
+msgstr ""
+
+#: templates/ads.php:120
+msgid "Resets in"
+msgstr ""
+
+#: includes/Gateways/Stripe.php:1007
+msgid "Return URL"
+msgstr ""
+
+#: includes/Templates/Templates.php:536
+msgid "Reversal"
+msgstr ""
+
+#: includes/Rewards/CheckInPolicy.php:228
+msgid "Reversed daily check-in reward"
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:571
+msgid "Rewarded ad (network verified)"
+msgstr ""
+
+#: includes/Rewards/AdRewardPolicy.php:325
+msgid "Rewarded ad completion"
+msgstr ""
+
+#: includes/Rewards/AdRewardPolicy.php:98
+#: includes/Rewards/AdRewardPolicy.php:201
+#: includes/Templates/Assets.php:425
+#: templates/ads.php:68
+#: templates/dashboard-hero.php:288
+#: templates/dashboard.php:390
+msgid "Rewarded ads are not configured on this site yet."
+msgstr ""
+
+#: templates/ads.php:35
+#: templates/ads.php:157
+msgid "Rewarded video"
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:139
+msgid "Rewarded video (S2S verified)"
+msgstr ""
+
+#: templates/balance.php:37
+msgid "Rewards"
+msgstr ""
+
+#: templates/ads.php:268
+msgid "Rewards from ads will be listed here."
+msgstr ""
+
+#: templates/checkin-compact.php:167
+#: templates/checkin-hero.php:219
+#: templates/checkin.php:395
+msgid "Rules"
+msgstr ""
+
+#: templates/parts/countdown.php:47
+msgid "s"
+msgstr ""
+
+#: includes/Admin/TransactionsPage.php:54
+msgid "Search reason"
+msgstr ""
+
+#: includes/Gateways/Stripe.php:988
+msgid "Secret key"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:129
+#: includes/Admin/SettingsPage.php:710
+msgid "Security"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:542
+msgid "Security, auditing, and rate-limiting options."
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:666
+msgid "Sells coin packages through the shop checkout. WooCommerce must be active."
+msgstr ""
+
+#: includes/Admin/ToolsPage.php:46
+msgid "Sets a user balance to zero by recording an admin_adjust debit. A reason is required for auditability."
+msgstr ""
+
+#: includes/Admin/Admin.php:91
+#: includes/Admin/Admin.php:92
+#: includes/Admin/SettingsPage.php:59
+msgid "Settings"
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:742
+msgid "Shared secret"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:510
+msgid "Show a login prompt to visitors on coin-rewards pages."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:498
+msgid "Show a toast notification when the coin balance changes."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:361
+msgid "Show balance summary"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:409
+msgid "Show breadcrumb"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:373
+msgid "Show progress bars"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:397
+msgid "Show sidebar"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:385
+msgid "Show streak calendar"
+msgstr ""
+
+#: includes/Widgets/BalanceWidget.php:166
+msgid "Show the \"View rewards\" link"
+msgstr ""
+
+#: includes/Widgets/BalanceWidget.php:159
+msgid "Show the check-in streak"
+msgstr ""
+
+#: includes/Templates/Assets.php:440
+#: templates/transactions.php:217
+msgid "Showing %1$s of %2$s"
+msgstr ""
+
+#: includes/Widgets/BalanceWidget.php:31
+msgid "Shows the logged-in user's coin balance, streak and a link to the rewards dashboard."
+msgstr ""
+
+#: includes/Templates/Templates.php:723
+msgid "Sign in"
+msgstr ""
+
+#: includes/Templates/Templates.php:741
+msgid "Sign in to see your coins"
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:754
+msgid "Signature header"
+msgstr ""
+
+#: includes/Templates/Blocks.php:185
+msgid "Site default"
+msgstr ""
+
+#: includes/Templates/Assets.php:417
+#: templates/parts/error.php:19
+msgid "Something went wrong. Please try again."
+msgstr ""
+
+#: includes/Admin/TransactionsPage.php:358
+#: includes/Admin/TransactionsPage.php:194
+msgid "Source"
+msgstr ""
+
+#: includes/Templates/Templates.php:532
+msgid "Spent"
+msgstr ""
+
+#: templates/checkin-compact.php:82
+#: templates/checkin-hero.php:84
+#: templates/checkin.php:138
+#: templates/dashboard-hero.php:202
+msgid "Start your streak today."
+msgstr ""
+
+#: includes/Templates/Assets.php:442
+msgid "Starting checkout..."
+msgstr ""
+
+#: includes/Templates/Assets.php:422
+msgid "Starting..."
+msgstr ""
+
+#: templates/dashboard-list.php:206
+#: templates/dashboard.php:310
+msgid "Streak"
+msgstr ""
+
+#: includes/Templates/Templates.php:528
+msgid "Streak bonus"
+msgstr ""
+
+#: templates/checkin-compact.php:60
+#: templates/checkin-hero.php:96
+#: templates/checkin.php:115
+msgid "Streak bonus unlocked: +%s coins."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:189
+#: templates/checkin-hero.php:160
+#: templates/checkin.php:332
+msgid "Streak bonuses"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:304
+#: includes/Admin/SettingsPage.php:926
+msgid "Stripe"
+msgstr ""
+
+#: includes/Gateways/Stripe.php:81
+msgid "Stripe Checkout"
+msgstr ""
+
+#: includes/Gateways/Stripe.php:285
+msgid "Stripe could not be reached. Please try again."
+msgstr ""
+
+#: includes/Gateways/Stripe.php:984
+msgid "Stripe Dashboard → Developers → API keys → Publishable key (pk_live_... or pk_test_...)."
+msgstr ""
+
+#: includes/Gateways/Stripe.php:990
+msgid "Stripe Dashboard → Developers → API keys → Secret key (sk_live_... or sk_test_...). Stored encrypted at rest when sodium is available; never shown back."
+msgstr ""
+
+#: includes/Gateways/Stripe.php:301
+msgid "Stripe did not accept the payment session. Please try again."
+msgstr ""
+
+#: includes/Gateways/Stripe.php:183
+msgid "Stripe is not configured."
+msgstr ""
+
+#: includes/Gateways/Stripe.php:703
+msgid "Stripe refund (%s)"
+msgstr ""
+
+#: templates/dashboard-hero.php:98
+#: templates/dashboard-list.php:77
+#: templates/dashboard.php:152
+#: templates/transactions.php:45
+msgid "Summary"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:338
+msgid "Template layout for the "
+msgstr ""
+
+#: includes/Templates/Templates.php:854
+#: includes/Templates/Templates.php:1049
+msgid "Template not found."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:115
+#: includes/Admin/SettingsPage.php:708
+msgid "Templates & Layout"
+msgstr ""
+
+#: includes/Rest.php:328
+msgid "That coin package is not available."
+msgstr ""
+
+#: includes/Rewards/AdRewardPolicy.php:212
+#: includes/Rewards/AdRewardPolicy.php:304
+#: includes/Rewards/AdSessions.php:408
+msgid "The ad completion could not be verified."
+msgstr ""
+
+#: includes/Templates/Assets.php:426
+msgid "The ad could not be loaded. No coins were added."
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:305
+msgid "The ad network has not confirmed this session yet. If the ad was really completed, the reward will appear automatically in a few seconds."
+msgstr ""
+
+#: includes/Templates/Assets.php:428
+msgid "The ad provider did not respond. No coins were added."
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:257
+#: includes/AdProviders/GenericS2S.php:274
+msgid "The ad session could not be verified."
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:282
+#: includes/Rewards/AdRewardPolicy.php:241
+msgid "The ad session does not belong to this account."
+msgstr ""
+
+#: includes/Rewards/AdRewardPolicy.php:273
+msgid "The ad session has expired. Please watch the ad again."
+msgstr ""
+
+#: includes/Rewards/AdRewardPolicy.php:263
+msgid "The ad session is no longer valid."
+msgstr ""
+
+#: includes/Rewards/AdRewardPolicy.php:233
+#: includes/Rewards/AdSessions.php:427
+msgid "The ad session was not found or has expired."
+msgstr ""
+
+#: includes/Gateways/Gateway.php:477
+msgid "The buyer account could not be resolved."
+msgstr ""
+
+#: includes/Gateways/Gateway.php:825
+msgid "The coin amount of this payment is invalid."
+msgstr ""
+
+#: includes/Gateways/Gateway.php:483
+msgid "The coin package could not be resolved."
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:248
+msgid "The coin package product could not be added to the order."
+msgstr ""
+
+#: includes/Gateways/Gateway.php:1005
+msgid "The coin reversal failed."
+msgstr ""
+
+#: includes/Integrations/Privacy.php:143
+msgid "The coin transaction ledger was anonymised. %d transaction rows were retained for audit purposes."
+msgstr ""
+
+#: includes/Gateways/Gateway.php:870
+msgid "The coins could not be credited automatically. An administrator has been notified."
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:298
+msgid "The completion token does not match the network callback."
+msgstr ""
+
+#: includes/Rewards/AdSessions.php:326
+msgid "The daily ad reward limit has been reached for the whole site."
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:744
+msgid "The HMAC secret shared with the ad network: paste the same value into the network server-server (S2S) callback settings. Without it no coin is ever granted."
+msgstr ""
+
+#: includes/Gateways/Manual.php:146
+msgid "The manual gateway has no webhook. Payments are confirmed in the admin panel."
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:180
+msgid "The mapped WooCommerce product has no price set."
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:161
+msgid "The mapped WooCommerce product no longer exists."
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:464
+msgid "The order currency does not match the package currency. Coins were not credited."
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:482
+msgid "The order does not belong to the buyer of record."
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:345
+msgid "The order does not contain a mapped coin package."
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:512
+msgid "The order state changed while saving."
+msgstr ""
+
+#: includes/Gateways/Manual.php:280
+#: includes/Gateways/Manual.php:351
+msgid "The order state changed while saving. Reload and check its status."
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:442
+msgid "The order total does not match the package price. Coins were not credited."
+msgstr ""
+
+#: includes/Payments/Packages.php:265
+#: includes/Payments/Packages.php:289
+msgid "The package could not be saved."
+msgstr ""
+
+#: includes/Payments/Packages.php:405
+#: includes/Payments/Packages.php:411
+msgid "The package fields are invalid."
+msgstr ""
+
+#: includes/Gateways/Gateway.php:514
+msgid "The payment amount does not match the package price."
+msgstr ""
+
+#: includes/Gateways/Gateway.php:499
+msgid "The payment amount is invalid."
+msgstr ""
+
+#: includes/Gateways/Gateway.php:522
+msgid "The payment currency is invalid."
+msgstr ""
+
+#: includes/Gateways/Stripe.php:425
+msgid "The payment failed."
+msgstr ""
+
+#: includes/Gateways/Gateway.php:655
+#: includes/Gateways/Gateway.php:661
+msgid "The payment order could not be created."
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:750
+msgid "The rewarded placement id as configured in the ad network."
+msgstr ""
+
+#: includes/Gateways/Stripe.php:402
+msgid "The webhook delivery could not be verified."
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:282
+msgid "The WooCommerce bridge listens to internal WooCommerce order hooks, not webhooks."
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:239
+msgid "The WooCommerce order could not be created."
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:327
+#: includes/Gateways/WooCommerce.php:337
+msgid "The WooCommerce order was not found."
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:186
+msgid "The WooCommerce product price must exactly match the package price. Update the product or the package."
+msgstr ""
+
+#: includes/Rewards/AdRewardPolicy.php:255
+#: includes/Rewards/AdSessions.php:512
+msgid "This ad reward has already been claimed."
+msgstr ""
+
+#: includes/Templates/Assets.php:427
+msgid "This ad reward was already added to your balance."
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:179
+#: includes/AdProviders/GenericS2S.php:196
+msgid "This ad unit is not available."
+msgstr ""
+
+#: includes/Payments/Packages.php:283
+msgid "This coin package does not exist."
+msgstr ""
+
+#: includes/Gateways/Gateway.php:561
+msgid "This coin package is no longer available."
+msgstr ""
+
+#: includes/Gateways/Manual.php:286
+msgid "This payment cannot be approved in its current state."
+msgstr ""
+
+#: includes/Gateways/Gateway.php:821
+msgid "This payment cannot be credited in its current state."
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:395
+msgid "This payment is not awaiting credit."
+msgstr ""
+
+#: includes/Payments/Orders.php:80
+msgid "This payment method is not available right now."
+msgstr ""
+
+#: includes/Gateways/Gateway.php:969
+#: includes/Gateways/Manual.php:236
+#: includes/Gateways/Manual.php:266
+#: includes/Gateways/Manual.php:325
+#: includes/Gateways/Manual.php:343
+#: includes/Gateways/Manual.php:383
+#: includes/Gateways/Manual.php:395
+msgid "This payment record was not found."
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:391
+msgid "This payment was refunded."
+msgstr ""
+
+#: includes/Gateways/Stripe.php:219
+#: includes/Gateways/WooCommerce.php:226
+msgid "This purchase is already in progress. Reload the buy page to retry."
+msgstr ""
+
+#: includes/Ledger.php:165
+msgid "This reward was blocked."
+msgstr ""
+
+#: includes/Templates/Templates.php:855
+#: includes/Templates/Templates.php:1050
+msgid "This rewards page cannot be displayed right now."
+msgstr ""
+
+#: includes/Ledger.php:215
+msgid "This spend was blocked."
+msgstr ""
+
+#: templates/checkin-hero.php:140
+#: templates/checkin.php:312
+#: templates/dashboard-hero.php:218
+msgid "This week"
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:761
+msgid "Timestamp header"
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:768
+msgid "Timestamp tolerance (seconds)"
+msgstr ""
+
+#: includes/Admin/PackagesPage.php:131
+msgid "Title"
+msgstr ""
+
+#: includes/Widgets/BalanceWidget.php:148
+msgid "Title:"
+msgstr ""
+
+#: includes/Admin/TransactionsPage.php:51
+msgid "To"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:492
+msgid "Toast notifications"
+msgstr ""
+
+#: templates/ads.php:89
+#: templates/dashboard-hero.php:254
+#: templates/dashboard.php:345
+msgid "Today's ads: %1$d of %2$d"
+msgstr ""
+
+#: includes/Templates/Assets.php:415
+msgid "Too many attempts. Please wait a moment and try again."
+msgstr ""
+
+#: includes/Admin/Admin.php:136
+#: includes/Admin/Admin.php:137
+#: includes/Admin/ToolsPage.php:32
+msgid "Tools"
+msgstr ""
+
+#: templates/dashboard.php:261
+msgid "Top up your balance. Coins are added after payment confirmation."
+msgstr ""
+
+#: includes/Admin/DashboardPage.php:111
+msgid "Total Users"
+msgstr ""
+
+#: templates/transactions.php:46
+msgid "Totals for the transactions on this page."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:209
+msgid "Track consecutive-day streaks and award streak bonuses."
+msgstr ""
+
+#: templates/transactions.php:95
+#: templates/transactions.php:149
+msgid "Transaction history"
+msgstr ""
+
+#: includes/Integrations/Privacy.php:48
+msgid "Transaction ID"
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:775
+msgid "Transaction id field"
+msgstr ""
+
+#: includes/Admin/TransactionsPage.php:31
+msgid "Transaction Ledger"
+msgstr ""
+
+#: templates/transactions.php:196
+#: templates/transactions.php:197
+msgid "Transaction pages"
+msgstr ""
+
+#: includes/Admin/Admin.php:118
+#: includes/Admin/Admin.php:119
+msgid "Transactions"
+msgstr ""
+
+#: includes/Admin/DashboardPage.php:131
+msgid "Transactions Today"
+msgstr ""
+
+#: includes/Templates/Assets.php:418
+#: templates/parts/error.php:24
+msgid "Try again"
+msgstr ""
+
+#: includes/Admin/LogsPage.php:124
+#: includes/Admin/TransactionsPage.php:359
+msgid "Txn UID"
+msgstr ""
+
+#: includes/Admin/LogsPage.php:120
+#: includes/Admin/TransactionsPage.php:354
+#: includes/Admin/TransactionsPage.php:40
+#: includes/Admin/TransactionsPage.php:190
+#: includes/Integrations/Privacy.php:52
+#: includes/Templates/Assets.php:447
+#: templates/dashboard-list.php:170
+#: templates/dashboard-list.php:187
+#: templates/transactions.php:153
+#: templates/transactions.php:179
+msgid "Type"
+msgstr ""
+
+#: includes/Admin/ToolsPage.php:87
+msgid "Type exactly: yes-delete-everything"
+msgstr ""
+
+#: templates/parts/package.php:108
+msgid "Unavailable"
+msgstr ""
+
+#: includes/Gateways/Stripe.php:433
+msgid "Unexpected webhook response."
+msgstr ""
+
+#: includes/Admin/Admin.php:513
+msgid "Uninstall confirmation was missing."
+msgstr ""
+
+#: includes/Admin/ToolsPage.php:75
+msgid "Uninstall Helper"
+msgstr ""
+
+#: includes/Admin/LogsPage.php:119
+#: includes/Admin/TransactionsPage.php:353
+#: includes/Admin/TransactionsPage.php:37
+#: includes/Admin/TransactionsPage.php:189
+#: includes/Admin/UsersPage.php:145
+msgid "User"
+msgstr ""
+
+#: includes/Admin/LogsPage.php:132
+#: includes/Admin/TransactionsPage.php:202
+#: includes/Admin/TransactionsPage.php:387
+msgid "User #%d"
+msgstr ""
+
+#: includes/Admin/Admin.php:497
+msgid "User balance reset to zero."
+msgstr ""
+
+#: includes/Admin/UsersPage.php:57
+msgid "User Balances"
+msgstr ""
+
+#: includes/Admin/ToolsPage.php:54
+#: includes/Admin/TransactionsPage.php:352
+#: includes/Admin/UsersPage.php:345
+msgid "User ID"
+msgstr ""
+
+#: includes/Admin/Admin.php:379
+msgid "User ID, amount, and reason are required."
+msgstr ""
+
+#: includes/Admin/Admin.php:384
+#: includes/Admin/Admin.php:437
+#: includes/Admin/Admin.php:471
+msgid "User not found."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:546
+msgid "User-facing notification preferences."
+msgstr ""
+
+#: includes/Admin/Admin.php:109
+#: includes/Admin/Admin.php:110
+msgid "Users"
+msgstr ""
+
+#: includes/AdProviders/GenericS2S.php:84
+msgid "Verified postback (S2S)"
+msgstr ""
+
+#: templates/dashboard.php:337
+msgid "View ads"
+msgstr ""
+
+#: templates/ads.php:257
+#: templates/dashboard-hero.php:146
+#: templates/dashboard-list.php:144
+#: templates/dashboard.php:144
+#: templates/dashboard.php:275
+msgid "View all"
+msgstr ""
+
+#: includes/Widgets/BalanceWidget.php:109
+#: templates/checkin-compact.php:150
+#: templates/checkin-hero.php:131
+#: templates/checkin.php:211
+msgid "View rewards"
+msgstr ""
+
+#: templates/dashboard.php:243
+msgid "Watch a short ad to earn %s coins."
+msgstr ""
+
+#: templates/ads.php:212
+msgid "Watch ad (+%s)"
+msgstr ""
+
+#: templates/ads.php:43
+#: templates/ads.php:59
+#: templates/ads.php:77
+#: templates/dashboard-hero.php:246
+#: templates/dashboard-list.php:132
+#: templates/dashboard.php:225
+#: templates/dashboard.php:250
+msgid "Watch ads"
+msgstr ""
+
+#: includes/Admin/DashboardPage.php:56
+msgid "Watch Ads"
+msgstr ""
+
+#: includes/Pages.php:50
+msgid "Watch Ads & Earn"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:87
+#: includes/Admin/SettingsPage.php:706
+msgid "Watch Ads to Earn"
+msgstr ""
+
+#: templates/dashboard-hero.php:59
+#: templates/dashboard-list.php:54
+#: templates/dashboard.php:65
+msgid "Watch an ad (+%s)"
+msgstr ""
+
+#: includes/Templates/Assets.php:421
+msgid "Watching ad..."
+msgstr ""
+
+#: includes/Templates/Assets.php:424
+msgid "We could not confirm that ad finished, so no coins were added."
+msgstr ""
+
+#: includes/Templates/Assets.php:446
+msgid "We could not load your transactions. Please try again."
+msgstr ""
+
+#: includes/Templates/Assets.php:412
+msgid "We could not save your check-in. Please try again."
+msgstr ""
+
+#: includes/Templates/Assets.php:441
+msgid "We could not start the payment."
+msgstr ""
+
+#: includes/Templates/Shortcodes.php:291
+#: templates/buy-coins.php:75
+msgid "We will add your coins as soon as the payment is confirmed."
+msgstr ""
+
+#: includes/Gateways/Stripe.php:994
+msgid "Webhook signing secret"
+msgstr ""
+
+#: includes/Gateways/Stripe.php:977
+msgid "When disabled the checkout refuses to use Stripe even if keys are present."
+msgstr ""
+
+#: templates/buy-coins.php:193
+msgid "When do I get my coins?"
+msgstr ""
+
+#: includes/Gateways/Stripe.php:1009
+msgid "Where the buyer lands after paying. Defaults to the site home page."
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:326
+msgid "Wide"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:305
+#: includes/Admin/SettingsPage.php:927
+msgid "WooCommerce"
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:58
+msgid "WooCommerce checkout"
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:142
+#: includes/Gateways/WooCommerce.php:331
+msgid "WooCommerce is required for this payment method."
+msgstr ""
+
+#: includes/Gateways/WooCommerce.php:580
+msgid "WooCommerce order refunded"
+msgstr ""
+
+#: includes/Rewards/CheckIn.php:214
+msgid "You are checking in too quickly. Please wait a moment and try again."
+msgstr ""
+
+#: includes/Gateways/Manual.php:208
+msgid "You are not allowed to manage coin payments."
+msgstr ""
+
+#: includes/Rewards/AdSessions.php:146
+msgid "You are requesting ad sessions too quickly. Please wait a moment and try again."
+msgstr ""
+
+#: templates/checkin.php:101
+msgid "You can still earn coins from ads or by purchasing a package."
+msgstr ""
+
+#: templates/ads.php:51
+msgid "You can still earn coins with a daily check-in or by purchasing a package."
+msgstr ""
+
+#: templates/buy-coins.php:98
+msgid "You can still earn coins with a daily check-in or by watching ads."
+msgstr ""
+
+#: includes/Templates/Assets.php:433
+msgid "You can watch another ad now."
+msgstr ""
+
+#: includes/Ledger.php:406
+msgid "You do not have enough coins for this."
+msgstr ""
+
+#: includes/Templates/Assets.php:413
+msgid "You have already checked in today."
+msgstr ""
+
+#: includes/Rewards/CheckIn.php:246
+#: includes/Rewards/CheckIn.php:306
+#: includes/Rewards/CheckInPolicy.php:91
+#: includes/Rewards/CheckInPolicy.php:188
+msgid "You have already claimed your daily reward today."
+msgstr ""
+
+#: includes/Templates/Shortcodes.php:285
+msgid "You have not been charged. Try another payment method."
+msgstr ""
+
+#: includes/Rewards/AdRewardPolicy.php:121
+#: includes/Rewards/AdRewardPolicy.php:129
+#: includes/Rewards/AdRewardPolicy.php:281
+#: includes/Rewards/AdSessions.php:300
+msgid "You have reached the daily ad reward limit."
+msgstr ""
+
+#: templates/transactions.php:118
+msgid "You have reached the end of your history."
+msgstr ""
+
+#: includes/Rest.php:169
+msgid "You must be logged in to use this feature."
+msgstr ""
+
+#: templates/balance.php:81
+#: templates/balance.php:34
+#: templates/balance.php:41
+#: templates/balance.php:78
+#: templates/buy-coins.php:56
+#: templates/dashboard-hero.php:70
+#: templates/dashboard.php:78
+msgid "Your balance"
+msgstr ""
+
+#: includes/Templates/Templates.php:742
+msgid "Your balance, streak and transaction history are private to your account."
+msgstr ""
+
+#: templates/dashboard-hero.php:155
+#: templates/dashboard-list.php:153
+#: templates/dashboard.php:285
+#: templates/transactions.php:135
+msgid "Your coin activity will appear here as soon as you earn or spend coins."
+msgstr ""
+
+#: includes/Widgets/BalanceWidget.php:45
+#: includes/Widgets/BalanceWidget.php:143
+msgid "Your Coins"
+msgstr ""
+
+#: templates/buy-coins.php:176
+msgid "Your coins are credited only after the payment is confirmed. If you cancel, you are not charged."
+msgstr ""
+
+#: includes/Templates/Assets.php:416
+msgid "Your device clock is out of sync. Reload the page to see the correct time."
+msgstr ""
+
+#: includes/Templates/Assets.php:414
+msgid "Your session expired. Reload the page and try again."
+msgstr ""
+

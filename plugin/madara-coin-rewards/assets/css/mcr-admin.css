@@ -1,0 +1,264 @@
+/*
+ * Madara Coin & Rewards — Admin styles.
+ *
+ * Scoped strictly under .mcr-admin and #mcr-admin-wrap so the plugin never
+ * restyles the Madara theme or other admin screens.
+ *
+ * Colors reuse the Madara design tokens:
+ *   brand-primary #eb3349
+ *   brand-secondary #75b22d
+ *   border-light  #e1e1e1
+ *   text-primary  #333333
+ *   text-secondary #888888
+ */
+
+/* Scope root: only apply inside our admin wrapper. */
+#mcr-admin-wrap,
+.mcr-admin {
+	display: block;
+}
+
+/* Card container used by several admin pages. */
+.mcr-admin-card {
+	border: 1px solid #e1e1e1;
+	border-radius: 4px;
+	padding: 20px;
+	margin: 0 0 24px;
+	background: #ffffff;
+}
+
+.mcr-admin-card h2 {
+	font-size: 18px;
+	margin: 0 0 16px;
+	color: #272727;
+	font-weight: 600;
+}
+
+/* Stat cards on the dashboard. */
+.mcr-admin-stat-cards {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	margin: 0 0 30px;
+}
+
+.mcr-admin-stat-card {
+	flex: 1 1 200px;
+	border: 1px solid #e1e1e1;
+	border-top: 4px solid var(--mcr-stat-color, #eb3349);
+	border-radius: 4px;
+	padding: 16px;
+	background: #ffffff;
+}
+
+.mcr-admin-stat-label {
+	display: block;
+	font-size: 12px;
+	color: #888888;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	margin: 0 0 8px;
+	font-weight: 600;
+}
+
+.mcr-admin-stat-value {
+	display: block;
+	font-size: 28px;
+	font-weight: 700;
+	color: #333333;
+	line-height: 1.2;
+}
+
+/* Tables: reuse .widefat structure, add scoped tweaks only. */
+.mcr-admin-table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 0 0 24px;
+}
+
+.mcr-admin-table th,
+.mcr-admin-table td {
+	padding: 12px 16px;
+	border-bottom: 1px solid #e1e1e1;
+	text-align: left;
+	color: #333333;
+	font-size: 14px;
+}
+
+.mcr-admin-table th {
+	background: #f6f6f6;
+	font-weight: 600;
+	color: #272727;
+	border-top: 1px solid #e1e1e1;
+}
+
+.mcr-admin-table tbody tr:hover {
+	background: #fcfcfc;
+}
+
+.mcr-admin-table .mcr-admin-col-numeric {
+	text-align: right;
+}
+
+.mcr-admin-table mark.yes,
+.mcr-admin-table mark.error {
+	padding: 2px 8px;
+	border-radius: 10px;
+	font-weight: 600;
+	font-size: 12px;
+}
+
+.mcr-admin-table mark.yes {
+	background: #e8f5e9;
+	color: #2e7d32;
+}
+
+.mcr-admin-table mark.error {
+	background: #ffebee;
+	color: #c62828;
+}
+
+/* Amount sign colors. */
+.mcr-admin-amount-positive {
+	color: #2e7d32;
+	font-weight: 600;
+}
+
+.mcr-admin-amount-negative {
+	color: #c62828;
+	font-weight: 600;
+}
+
+/* Meta helper text. */
+.mcr-admin-meta {
+	display: block;
+	font-size: 12px;
+	color: #888888;
+	margin-top: 2px;
+}
+
+/* Required field marker. */
+.mcr-admin-required {
+	color: #c62828;
+}
+
+/* Small buttons used in action columns. */
+.mcr-admin-button-small {
+	font-size: 12px;
+	padding: 4px 10px;
+}
+
+/* Filters toolbar. */
+.mcr-admin-filters {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	align-items: center;
+	margin: 0 0 20px;
+	padding: 16px;
+	border: 1px solid #e1e1e1;
+	border-radius: 4px;
+	background: #f6f6f6;
+}
+
+.mcr-admin-filters label {
+	font-size: 12px;
+	font-weight: 600;
+	color: #333333;
+	margin: 0 4px 0 0;
+}
+
+.mcr-admin-filters input[type="text"],
+.mcr-admin-filters input[type="date"],
+.mcr-admin-filters select {
+	font-size: 13px;
+	padding: 6px 8px;
+	border: 1px solid #e1e1e1;
+	border-radius: 3px;
+	background: #ffffff;
+}
+
+/* Tablenav pagination reuse. */
+.mcr-admin-tablenav {
+	margin: 8px 0 0;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.mcr-admin-tablenav .tablenav-pages {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+}
+
+.mcr-admin-tablenav .page-numbers {
+	padding: 6px 12px;
+	border: 1px solid #e1e1e1;
+	border-radius: 3px;
+	color: #333333;
+	text-decoration: none;
+	font-size: 13px;
+}
+
+.mcr-admin-tablenav .page-numbers.current {
+	background: #eb3349;
+	border-color: #eb3349;
+	color: #ffffff;
+}
+
+.mcr-admin-tablenav .page-numbers:hover {
+	border-color: #eb3349;
+}
+
+/*
+ * The stylesheet is only enqueued on the plugin's own screens, so the
+ * elements it styles never appear anywhere else and cannot leak.
+ *
+ * There used to be a rule here that hid these elements whenever the
+ * <body> did not carry the "mcr-admin" class. That class is added by
+ * the admin_body_class filter, and while the filter was missing the
+ * rule hid EVERY table, card and filter on the plugin's own screens:
+ * the dashboard showed its headings and nothing else, and the packages
+ * screen could not be edited at all. The rule is gone.
+ */
+
+/* Dark mode awareness (theme toggles body.text-ui-dark). */
+body.text-ui-dark .mcr-admin-card,
+body.text-ui-dark .mcr-admin-stat-card {
+	background: #262626;
+	border-color: #4d4d4d;
+	color: #f6f6f6;
+}
+
+body.text-ui-dark .mcr-admin-table th {
+	background: #363636;
+	color: #f6f6f6;
+}
+
+body.text-ui-dark .mcr-admin-table th,
+body.text-ui-dark .mcr-admin-table td {
+	border-bottom-color: #4d4d4d;
+	border-top-color: #4d4d4d;
+}
+
+body.text-ui-dark .mcr-admin-table tbody tr:hover {
+	background: #3a3a3a;
+}
+
+body.text-ui-dark .mcr-admin-filters {
+	background: #363636;
+	border-color: #4d4d4d;
+}
+
+body.text-ui-dark .mcr-admin-filters label {
+	color: #f6f6f6;
+}
+
+body.text-ui-dark .mcr-admin-filters input[type="text"],
+body.text-ui-dark .mcr-admin-filters input[type="date"],
+body.text-ui-dark .mcr-admin-filters select {
+	background: #262626;
+	border-color: #4d4d4d;
+	color: #f6f6f6;
+}
