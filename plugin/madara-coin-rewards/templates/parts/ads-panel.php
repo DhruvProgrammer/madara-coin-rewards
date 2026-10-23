@@ -306,4 +306,4 @@ if ( $mcr_enabled && $mcr_configured && empty( $mcr_units ) ) {
 			</div>
 		</div>
 	</section>
-<?php endif; ?>
+<?php endif;

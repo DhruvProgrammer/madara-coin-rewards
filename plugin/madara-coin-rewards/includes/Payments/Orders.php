@@ -139,15 +139,27 @@ class Orders {
 	 * @param array $package Package definition.
 	 * @return string
 	 */
+	/**
+	 * In-memory cache of purchase attempt tokens for the current request.
+	 *
+	 * @var array
+	 */
+	private static $attempt_tokens = array();
+
 	private function attempt_id( $user_id, array $package ) {
-		$key = 'mcr_purchase_attempt_' . $user_id . '_' . $package['id'];
+		$cache_key = (int) $user_id . ':' . (string) ( $package['id'] ?? '' );
 
-		$token = get_transient( $key );
+		if ( isset( self::$attempt_tokens[ $cache_key ] ) ) {
+			$token = (string) self::$attempt_tokens[ $cache_key ];
 
-		if ( ! is_string( $token ) || '' === $token ) {
-			$token = wp_generate_uuid4();
-			set_transient( $key, $token, 120 );
+			if ( '' !== $token ) {
+				return $token;
+			}
 		}
+
+		$token = wp_generate_uuid4();
+
+		self::$attempt_tokens[ $cache_key ] = $token;
 
 		return $token;
 	}

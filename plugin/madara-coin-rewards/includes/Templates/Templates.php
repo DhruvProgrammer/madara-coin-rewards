@@ -909,20 +909,6 @@ class Templates {
 		$html  = '<div class="' . esc_attr( $classes ) . '" data-mcr-page="' . esc_attr( $slug ) . '" data-mcr-layout="' . esc_attr( $layout ) . '">';
 		$html .= self::coin_sprite();
 		$html .= $header;
-		/*
-		 * The daily check-in page always shows the wallet and the ad
-		 * panel, whichever layout the site has chosen. They are added
-		 * here, where the page is assembled, so the layout files stay
-		 * free of duplication and cannot drift apart.
-		 *
-		 * A visitor who is not signed in gets the sign-in prompt
-		 * instead, so no reward control is offered to them.
-		 */
-		if ( 'checkin' === $slug && is_user_logged_in() ) {
-			$content = self::part( 'wallet-block', array( 'page_args' => $args ) )
-				. $content
-				. self::part( 'ads-block', array( 'page_args' => $args ) );
-		}
 
 		$html .= '<div class="mcr-page__body">' . $content . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 
@@ -984,6 +970,46 @@ class Templates {
 	}
 
 	/**
+	 * The catalogue of strings the page registry ships with.
+	 *
+	 * The registry is built while the plugin boots, which is before the
+	 * init action, so the text domain is not loaded yet. Calling a
+	 * translation function at that point makes WordPress raise
+	 * "_load_textdomain_just_in_time was called incorrectly" on every
+	 * request, and the string is never translated.
+	 *
+	 * Every entry carries a literal message id, so a translator is able to
+	 * match it: a computed message id can never be translated.
+	 *
+	 * @return array Map of source string to translated string.
+	 */
+	private static function strings() {
+		return array(
+			'Daily check-in'                                                             => __( 'Daily check-in', 'madara-coin-rewards' ),
+			'Default'                                                                    => __( 'Default', 'madara-coin-rewards' ),
+			'Hero'                                                                       => __( 'Hero', 'madara-coin-rewards' ),
+			'Compact'                                                                    => __( 'Compact', 'madara-coin-rewards' ),
+			'Claim your coins once a day. Come back tomorrow to keep your streak alive.' => __( 'Claim your coins once a day. Come back tomorrow to keep your streak alive.', 'madara-coin-rewards' ),
+			'Rewards dashboard'                                                          => __( 'Rewards dashboard', 'madara-coin-rewards' ),
+			'Grid'                                                                       => __( 'Grid', 'madara-coin-rewards' ),
+			'List'                                                                       => __( 'List', 'madara-coin-rewards' ),
+			'Balance, streaks and everything you have earned so far.'                    => __( 'Balance, streaks and everything you have earned so far.', 'madara-coin-rewards' ),
+			'Watch ads'                                                                  => __( 'Watch ads', 'madara-coin-rewards' ),
+			'Cards'                                                                      => __( 'Cards', 'madara-coin-rewards' ),
+			'Watch a short ad to earn coins. Limits reset daily.'                        => __( 'Watch a short ad to earn coins. Limits reset daily.', 'madara-coin-rewards' ),
+			'Buy coins'                                                                  => __( 'Buy coins', 'madara-coin-rewards' ),
+			'Top up your balance. Coins are added as soon as payment is confirmed.'      => __( 'Top up your balance. Coins are added as soon as payment is confirmed.', 'madara-coin-rewards' ),
+			'Transaction history'                                                        => __( 'Transaction history', 'madara-coin-rewards' ),
+			'Table'                                                                      => __( 'Table', 'madara-coin-rewards' ),
+			'Every coin you have earned or spent, newest first.'                         => __( 'Every coin you have earned or spent, newest first.', 'madara-coin-rewards' ),
+			'Balance panel'                                                              => __( 'Balance panel', 'madara-coin-rewards' ),
+			'Card'                                                                       => __( 'Card', 'madara-coin-rewards' ),
+			'Inline'                                                                     => __( 'Inline', 'madara-coin-rewards' ),
+			'Your coin balance at a glance.'                                             => __( 'Your coin balance at a glance.', 'madara-coin-rewards' ),
+		);
+	}
+
+	/**
 	 * Translates a registry string.
 	 *
 	 * The registry is built while the plugin boots, which is before the
@@ -993,11 +1019,13 @@ class Templates {
 	 * request, and the string is never translated.
 	 *
 	 * @param string $source The source string.
-	 * @return string
+	 * @return string The translated string, or the source when unknown.
 	 */
 	public static function text( $source ) {
 		if ( function_exists( 'did_action' ) && did_action( 'init' ) ) {
-			return __( $source, 'madara-coin-rewards' );
+			$strings = self::strings();
+
+			return isset( $strings[ $source ] ) ? $strings[ $source ] : $source;
 		}
 
 		return $source;

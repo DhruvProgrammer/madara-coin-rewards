@@ -83,7 +83,7 @@ class Cron {
 				"DELETE FROM {$table}
 				 WHERE verified_at < %s
 				   AND status IN ( 'expired', 'credited', 'verified' )", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				gmdate( 'Y-m-d H:i:s', time() - ( 2 * DAY_IN_SECONDS ) )
+				gmdate( 'Y-m-d H:i:s', time() - ( 2 * \DAY_IN_SECONDS ) )
 			)
 		);
 
@@ -92,7 +92,7 @@ class Cron {
 				"DELETE FROM {$table}
 				 WHERE status = 'pending'
 				   AND expires_at < %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				gmdate( 'Y-m-d H:i:s', time() - DAY_IN_SECONDS )
+				gmdate( 'Y-m-d H:i:s', time() - \DAY_IN_SECONDS )
 			)
 		);
 	}
@@ -134,7 +134,7 @@ class Cron {
 		// a session hours later.
 		$wpdb->query(
 			$wpdb->prepare(
-				"UPDATE {$table} SET status = 'expired' WHERE status = 'pending' AND expires_at < %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"UPDATE {$table} SET status = 'expired' WHERE status = 'pending' AND expires_at < %s LIMIT 100", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				gmdate( 'Y-m-d H:i:s' )
 			)
 		);

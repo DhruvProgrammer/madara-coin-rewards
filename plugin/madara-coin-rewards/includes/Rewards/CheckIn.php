@@ -27,6 +27,13 @@ class CheckIn {
 	private static $instance = null;
 
 	/**
+	 * Per-request memoisation of status() results.
+	 *
+	 * @var array
+	 */
+	private $status_cache = array();
+
+	/**
 	 * Returns the shared instance.
 	 *
 	 * @return CheckIn
@@ -50,6 +57,10 @@ class CheckIn {
 
 		$user_id = absint( $user_id );
 
+		if ( isset( $this->status_cache[ $user_id ] ) ) {
+			return $this->status_cache[ $user_id ];
+		}
+
 		$clock   = Container::instance()->clock();
 		$today   = $clock->today_key();
 
@@ -69,6 +80,8 @@ class CheckIn {
 		);
 
 		if ( ! $user_id ) {
+			$this->status_cache[ $user_id ] = $defaults;
+
 			return $defaults;
 		}
 
@@ -108,7 +121,18 @@ class CheckIn {
 		$defaults['base_claimable'] = $defaults['total_amount'] > 0;
 		$defaults['calendar']       = $this->calendar( $user_id );
 
+		$this->status_cache[ $user_id ] = $defaults;
+
 		return $defaults;
+	}
+
+	/**
+	 * Clears the per-request status cache.
+	 *
+	 * @return void
+	 */
+	public function reset_status_cache() {
+		$this->status_cache = array();
 	}
 
 	/**

@@ -46,7 +46,26 @@ class PackageCalculator {
 			$bonus_percent = 100;
 		}
 
-		$bonus = (int) floor( $base_coins * $bonus_percent / 100 );
+		/*
+		 * Compute the bonus without overflowing on absurd inputs: the
+		 * multiplication is done in floating point and the result is
+		 * clamped to the integer range before it is cast back.
+		 */
+		$bonus = 0;
+
+		if ( $base_coins > 0 && $bonus_percent > 0 ) {
+			$raw_bonus = ( (float) $base_coins * (float) $bonus_percent ) / 100.0;
+
+			if ( ! is_finite( $raw_bonus ) || $raw_bonus >= PHP_INT_MAX ) {
+				$bonus = PHP_INT_MAX - $base_coins;
+			} else {
+				$bonus = (int) floor( $raw_bonus );
+			}
+
+			if ( $bonus < 0 ) {
+				$bonus = 0;
+			}
+		}
 
 		$max_bonus_coins = (int) $max_bonus_coins;
 
@@ -54,7 +73,13 @@ class PackageCalculator {
 			$bonus = $max_bonus_coins;
 		}
 
-		return $base_coins + $bonus;
+		$total = $base_coins + $bonus;
+
+		if ( $total < 0 || $total > PHP_INT_MAX ) {
+			$total = PHP_INT_MAX;
+		}
+
+		return $total;
 	}
 
 	/**
@@ -74,9 +99,21 @@ class PackageCalculator {
 			return 0;
 		}
 
+		$price_float = (float) $price;
+
+		if ( ! is_finite( $price_float ) ) {
+			return 0;
+		}
+
 		$factor = pow( 10, $decimals );
 
-		return (int) round( ( (float) $price ) * $factor );
+		$result = $price_float * $factor;
+
+		if ( ! is_finite( $result ) || $result < 0 || $result > PHP_INT_MAX ) {
+			return 0;
+		}
+
+		return (int) round( $result );
 	}
 
 	/**

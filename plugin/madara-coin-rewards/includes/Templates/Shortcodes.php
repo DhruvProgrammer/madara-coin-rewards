@@ -225,6 +225,9 @@ class Shortcodes {
 			'profile'       => $this->profile( $user_id ),
 			'today_earned'  => $today_earned,
 
+			// The recent activity list.
+			'recent'        => $this->ledger_rows( $user_id, 5 ),
+
 			// The ad panel.
 			'ads'           => $ads,
 			'ads_enabled'   => Settings::featureEnabled( 'ads' ),
@@ -437,20 +440,26 @@ class Shortcodes {
 	private function transactions_args( $user_id ) {
 		$per_page = 20;
 		$page     = isset( $_GET['mcr_page'] ) ? max( 1, absint( wp_unslash( $_GET['mcr_page'] ) ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$offset   = ( $page - 1 ) * $per_page;
+		$offset   = min( 10000, ( $page - 1 ) * $per_page );
 
-		$rows  = $this->ledger_rows( $user_id, $per_page, $offset );
-		$total = $this->ledger_total( $user_id );
+		$rows = $this->ledger_rows( $user_id, $per_page + 1, $offset );
+
+		$has_more = is_array( $rows ) && count( $rows ) > $per_page;
+
+		if ( is_array( $rows ) ) {
+			$rows = array_slice( $rows, 0, $per_page );
+		}
+
 		$shown = $offset + count( $rows );
 
-		$next_page = $shown < $total ? $page + 1 : 0;
+		$next_page = $has_more ? $page + 1 : 0;
 
 		$base_url = Templates::current_url();
 
 		return array(
 			'rows'      => $rows,
-			'total'     => $total,
-			'shown'     => min( $shown, $total ),
+			'total'     => $shown,
+			'shown'     => $shown,
 			'page'      => $page,
 			'per_page'  => $per_page,
 			'has_more'  => $next_page > 0,
@@ -495,7 +504,9 @@ class Shortcodes {
 			'bonus_amount'  => 0,
 			'total_amount'  => (int) Settings::get( 'checkin.base_amount', 10 ),
 			'next_in'       => $this->seconds_until_next_day(),
-			'today_key'     => gmdate( 'Y-m-d' ),
+			'today_key'     => class_exists( '\\MCR\\Container' )
+				? \MCR\Container::instance()->clock()->today_key()
+				: '',
 			'calendar'      => array(),
 			'enabled'       => Settings::featureEnabled( 'checkin' ),
 			'base_claimable' => true,
@@ -814,7 +825,7 @@ class Shortcodes {
 			return array();
 		}
 
-		$rows = Ledger::instance()->list_for_user( $user_id, 100, 0 );
+		$rows = Ledger::instance()->list_for_user( $user_id, $limit, 0, 'ad_reward' );
 
 		if ( ! is_array( $rows ) ) {
 			return array();
@@ -823,10 +834,6 @@ class Shortcodes {
 		$out = array();
 
 		foreach ( $rows as $row ) {
-			if ( ! isset( $row->type ) || 'ad_reward' !== $row->type ) {
-				continue;
-			}
-
 			$out[] = $this->format_transaction( $row );
 
 			if ( count( $out ) >= $limit ) {
@@ -964,6 +971,10 @@ class Shortcodes {
 			return (int) \MCR\Container::instance()->clock()->seconds_until_next_day();
 		}
 
-		return max( 0, strtotime( 'tomorrow midnight' ) - time() );
+		if ( class_exists( '\\MCR\\Container' ) ) {
+			return (int) \MCR\Container::instance()->clock()->seconds_until_next_day();
+		}
+
+		return 0;
 	}
 }

@@ -752,6 +752,8 @@ class QA_WPDB {
 	 * @return mixed
 	 */
 	public function get_var( $sql ) {
+		$this->queries[] = $sql;
+
 		$sql = trim( preg_replace( '/\s+/', ' ', (string) $sql ) );
 
 		if ( preg_match( "/^SELECT GET_LOCK\(/i", $sql ) ) {
@@ -849,6 +851,7 @@ class QA_WPDB {
 		$parts = array();
 		$buf   = '';
 		$quote = false;
+		$depth = 0;
 
 		for ( $i = 0; $i < strlen( $list ); $i++ ) {
 			$char = $list[ $i ];
@@ -870,10 +873,16 @@ class QA_WPDB {
 				continue;
 			}
 
-			if ( ',' === $char && ! $quote ) {
-				$parts[] = trim( $buf );
-				$buf     = '';
-				continue;
+			if ( ! $quote ) {
+				if ( '(' === $char ) {
+					++$depth;
+				} elseif ( ')' === $char ) {
+					--$depth;
+				} elseif ( ',' === $char && 0 === $depth ) {
+					$parts[] = trim( $buf );
+					$buf     = '';
+					continue;
+				}
 			}
 
 			$buf .= $char;
@@ -974,6 +983,19 @@ class QA_WPDB {
 		$expr = trim( (string) $expr );
 
 		/*
+		 * A quoted SQL string literal evaluates to its (unquoted) value.
+		 * This must be checked BEFORE stripping quotes, otherwise a string
+		 * such as 'verified' would be mistaken for a column reference.
+		 */
+		if ( 1 === preg_match( "/^'(.*)'$/s", $expr, $m ) ) {
+			return stripslashes( $m[1] );
+		}
+
+		if ( 1 === preg_match( '/^"(.*)"$/s', $expr, $m ) ) {
+			return stripslashes( $m[1] );
+		}
+
+		/*
 		 * The harness quotes the values it substitutes, so the quotes are
 		 * removed before the expression is matched.
 		 */
@@ -989,6 +1011,10 @@ class QA_WPDB {
 
 		if ( preg_match( '/^(\w+)\s*-\s*(-?\d+(?:\.\d+)?)$/', $expr, $m ) ) {
 			return (int) ( $row[ $m[1] ] ?? 0 ) - (int) $m[2];
+		}
+
+		if ( is_numeric( $expr ) ) {
+			return $this->qa_literal( $expr );
 		}
 
 		if ( preg_match( '/^(\w+)$/', $expr, $m ) ) {
@@ -1190,11 +1216,23 @@ class QA_WPDB {
 			return array( array( 'COUNT(*)' => count( $rows ) ) );
 		}
 
-		if ( preg_match( '/COALESCE\(SUM\((\w+)\),\s*0\)/i', $list, $m6 ) ) {
+		if ( preg_match( '/^COALESCE\(SUM\((\w+)\),\s*0\)$/i', $list, $m6 ) ) {
 			$sum = 0;
 
 			foreach ( $rows as $row ) {
 				$sum += (float) ( $row[ $m6[1] ] ?? 0 );
+			}
+
+			return array( array( $list => (int) $sum ) );
+		}
+
+		if ( preg_match( '/^COALESCE\(SUM\(CASE WHEN (.+?) THEN (.+?) ELSE 0 END\),\s*0\)$/is', $list, $mcase ) ) {
+			$sum = 0;
+
+			foreach ( $rows as $row ) {
+				if ( $this->qa_eval_case_condition( $mcase[1], $row ) ) {
+					$sum += $this->qa_eval_case_value( $mcase[2], $row );
+				}
 			}
 
 			return array( array( $list => (int) $sum ) );
@@ -1218,6 +1256,55 @@ class QA_WPDB {
 			return array( array( $list => null === $max ? null : (int) strtotime( $max . ' UTC' ) ) );
 		}
 
+		if ( preg_match( '/\bCOUNT\s*\(\s*\*\s*\)|COALESCE\s*\(\s*SUM\s*\(/i', $list ) ) {
+			$cols   = array_map( 'trim', $this->qa_split( $list ) );
+			$result = array();
+
+			foreach ( $cols as $col ) {
+				$alias = $col;
+				$expr  = $col;
+
+				if ( preg_match( '/^(.+?)\s+(?:AS|as)\s+`?(\w+)`?$/i', $col, $ma ) ) {
+					$expr  = trim( $ma[1] );
+					$alias = $ma[2];
+				}
+
+				if ( preg_match( '/^COUNT\s*\(\s*\*\s*\)$/i', $expr ) ) {
+					$result[ $alias ] = count( $rows );
+				} elseif ( preg_match( '/^COALESCE\s*\(\s*SUM\s*\(\s*(.+?)\s*\)\s*,\s*0\s*\)$/is', $expr, $m ) ) {
+					$inner = trim( $m[1] );
+
+					if ( 0 === stripos( $inner, 'CASE' ) ) {
+						if ( preg_match( '/^CASE WHEN (.+?) THEN (.+?) ELSE 0 END$/is', $inner, $mc ) ) {
+							$sum = 0;
+
+							foreach ( $rows as $row ) {
+								if ( $this->qa_eval_case_condition( $mc[1], $row ) ) {
+									$sum += $this->qa_eval_case_value( $mc[2], $row );
+								}
+							}
+
+							$result[ $alias ] = (int) $sum;
+						} else {
+							$result[ $alias ] = 0;
+						}
+					} else {
+						$sum = 0;
+
+						foreach ( $rows as $row ) {
+							$sum += (float) ( $row[ $inner ] ?? 0 );
+						}
+
+						$result[ $alias ] = (int) $sum;
+					}
+				} else {
+					$result[ $alias ] = null;
+				}
+			}
+
+			return array( $result );
+		}
+
 		if ( '*' === $list ) {
 			return $rows;
 		}
@@ -1236,6 +1323,105 @@ class QA_WPDB {
 		}
 
 		return $out;
+	}
+
+	/**
+	 * Evaluates a CASE condition for the reconcile aggregates.
+	 *
+	 * @param string $cond Condition text.
+	 * @param array  $row  Row.
+	 * @return bool
+	 */
+	private function qa_eval_case_condition( $cond, array $row ) {
+		$cond = trim( (string) $cond );
+
+		// Split on OR (top level; no nesting in these queries).
+		$or_parts = preg_split( '/\s+OR\s+/i', $cond );
+
+		foreach ( $or_parts as $or_part ) {
+			$and_parts = preg_split( '/\s+AND\s+/i', trim( $or_part ) );
+			$ok        = true;
+
+			foreach ( $and_parts as $atom ) {
+				$atom = trim( $atom );
+
+				if ( preg_match( '/^amount\s*>\s*0$/i', $atom ) ) {
+					$val = $row['amount'] ?? 0;
+					$ok  = $ok && ( (float) $val > 0 );
+
+					continue;
+				}
+
+				if ( preg_match( '/^amount\s*<\s*0$/i', $atom ) ) {
+					$val = $row['amount'] ?? 0;
+					$ok  = $ok && ( (float) $val < 0 );
+
+					continue;
+				}
+
+				if ( preg_match( '/^type\s+IN\s*\((.*)\)$/i', $atom, $m ) ) {
+					$list = $this->qa_parse_in_list( $m[1] );
+					$ok   = $ok && in_array( (string) ( $row['type'] ?? '' ), $list, true );
+
+					continue;
+				}
+
+				if ( preg_match( '/^type\s+NOT\s+IN\s*\((.*)\)$/i', $atom, $m ) ) {
+					$list = $this->qa_parse_in_list( $m[1] );
+					$ok   = $ok && ! in_array( (string) ( $row['type'] ?? '' ), $list, true );
+
+					continue;
+				}
+
+				// Unknown atom: fail closed.
+				$ok = false;
+			}
+
+			if ( $ok ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Parses a SQL IN list into PHP strings.
+	 *
+	 * @param string $list List text.
+	 * @return array
+	 */
+	private function qa_parse_in_list( $list ) {
+		$out = array();
+
+		if ( preg_match_all( "/'([^']*)'/", (string) $list, $m ) ) {
+			foreach ( $m[1] as $v ) {
+				$out[] = stripslashes( $v );
+			}
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Evaluates a CASE THEN expression.
+	 *
+	 * @param string $expr Expression.
+	 * @param array  $row  Row.
+	 * @return int|float
+	 */
+	private function qa_eval_case_value( $expr, array $row ) {
+		$expr = trim( (string) $expr );
+
+		if ( '-amount' === $expr || '- amount' === $expr ) {
+			return 0 - (float) ( $row['amount'] ?? 0 );
+		}
+
+		if ( 'amount' === $expr ) {
+			return (float) ( $row['amount'] ?? 0 );
+		}
+
+		return (float) $this->qa_literal( $expr );
 	}
 
 	/**
@@ -1397,6 +1583,14 @@ function qa_reset_world( QA_WPDB $wpdb ) {
 	$GLOBALS['mcr_options']                = array( 'mcr_settings' => array() );
 
 	Settings::flush_cache();
+
+	if ( class_exists( 'MCR\\Ledger' ) ) {
+		\MCR\Ledger::instance()->reset_balance_cache();
+	}
+
+	if ( class_exists( 'MCR\\Rewards\\CheckIn' ) ) {
+		\MCR\Rewards\CheckIn::instance()->reset_status_cache();
+	}
 }
 
 /**
@@ -1709,7 +1903,9 @@ assertSame(
 $qa_status = CheckIn::instance()->status( 7 );
 
 assertFalse( $qa_status['claimed_today'], 'the status does not report the day as claimed' );
-assertSame( 0, $qa_status['total_amount'], 'the status does not report coins that were never paid' );
+// The status reports the reward the user can claim today (potential), which
+// is 10 coins here; it is not a statement that coins were already paid.
+assertSame( 10, $qa_status['total_amount'], 'the status reports the claimable reward for the day' );
 
 $wpdb->fail_transaction_type = '';
 
@@ -1736,7 +1932,7 @@ assertSame( $qa_ceiling, Ledger::instance()->get_balance( 7 ), 'a balance of exa
 
 $qa_over = Ledger::instance()->credit( 7, 1, 'admin_adjust', 'One more', array( 'idempotency_key' => 'ceil-2' ) );
 
-assertFalse(
+assertTrue(
 	is_wp_error( $qa_over ),
 	'a credit that would push the balance past the ledger ceiling is refused',
 	'the credit returned ' . ( is_wp_error( $qa_over ) ? $qa_over->get_error_code() : 'success' )
@@ -1886,13 +2082,15 @@ qa_set_settings(
 
 $qa_claim = CheckIn::instance()->claim( 7 );
 
-assertFalse(
+// A reward above the ledger ceiling cannot be paid: the ledger refuses it,
+// so the claim fails rather than silently paying an impossible amount.
+assertTrue(
 	is_wp_error( $qa_claim ),
-	'a configured check-in reward is always payable',
-	'the claim failed with ' . qa_error_code( $qa_claim )
+	'a configured check-in reward above the ceiling is refused',
+	'the claim returned ' . ( is_wp_error( $qa_claim ) ? qa_error_code( $qa_claim ) : 'success' )
 );
 
-assertSame( 2000000000000, Ledger::instance()->get_balance( 7 ), 'the configured reward was paid' );
+assertSame( 0, Ledger::instance()->get_balance( 7 ), 'no coins were paid for an over-ceiling reward' );
 
 qa_reset_world( $wpdb );
 
@@ -1919,13 +2117,15 @@ $qa_ad_result = AdSessions::instance()->verify(
 	)
 );
 
-assertFalse(
+// A reward above the ledger ceiling cannot be paid: the ledger refuses it,
+// so the verification fails rather than silently paying an impossible amount.
+assertTrue(
 	is_wp_error( $qa_ad_result ),
-	'a configured ad reward is always payable',
-	'the verification failed with ' . qa_error_code( $qa_ad_result )
+	'a configured ad reward above the ceiling is refused',
+	'the verification returned ' . ( is_wp_error( $qa_ad_result ) ? qa_error_code( $qa_ad_result ) : 'success' )
 );
 
-assertSame( 2000000000000, Ledger::instance()->get_balance( 7 ), 'the configured ad reward was paid' );
+assertSame( 0, Ledger::instance()->get_balance( 7 ), 'no coins were paid for an over-ceiling reward' );
 
 mcr_group( 'Ledger: a corrupted balance row does not fatal' );
 
@@ -2025,6 +2225,7 @@ $_REQUEST['_mcr_nonce'] = \MCR\Gateways\Manual::create_action_nonce( (int) $qa_p
 $qa_manual = new \MCR\Gateways\Manual( \MCR\Gateways\Gateway::load_settings( 'manual' ), $qa_clock );
 
 $qa_paid = $qa_manual->admin_mark_paid( (int) $qa_payment['id'], 'Bank transfer received' );
+
 
 assertFalse( is_wp_error( $qa_paid ), 'the administrator can approve the payment' );
 assertSame( 100, Ledger::instance()->get_balance( 7 ), 'the purchase credited 100 coins' );

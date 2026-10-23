@@ -993,7 +993,11 @@ class Stripe extends Gateway {
 				'id'          => 'webhook_secret',
 				'label'       => __( 'Webhook signing secret', 'madara-coin-rewards' ),
 				'type'        => 'password',
-				'description' => __( 'Create a webhook endpoint in Stripe pointing to ' . '/wp-json/mcr/v1/stripe/webhook' . ' with events checkout.session.completed, checkout.session.expired and charge.refunded, then paste its Signing secret (whsec_...).', 'madara-coin-rewards' ),
+				'description' => sprintf(
+					/* translators: %s: the REST route that receives the Stripe webhook. */
+					__( 'Create a webhook endpoint in Stripe pointing to %s with events checkout.session.completed, checkout.session.expired and charge.refunded, then paste its Signing secret (whsec_...).', 'madara-coin-rewards' ),
+					'/wp-json/mcr/v1/stripe/webhook'
+				),
 			),
 			array(
 				'id'          => 'currency',

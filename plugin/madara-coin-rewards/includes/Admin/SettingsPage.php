@@ -326,16 +326,39 @@ class SettingsPage {
 			'wide'    => __( 'Wide', 'madara-coin-rewards' ),
 		);
 
+		/*
+		 * The page names are translated on their own and the capital is
+		 * baked into the string: how a page name is capitalised is a
+		 * locale decision, so the code must never force an English
+		 * capitalisation with ucfirst() on a translated word.
+		 */
+		$page_names = array(
+			'checkin'      => __( 'Checkin', 'madara-coin-rewards' ),
+			'dashboard'    => __( 'Dashboard', 'madara-coin-rewards' ),
+			'ads'          => __( 'Ads', 'madara-coin-rewards' ),
+			'buy_coins'    => __( 'Buy coins', 'madara-coin-rewards' ),
+			'transactions' => __( 'Transactions', 'madara-coin-rewards' ),
+			'balance'      => __( 'Balance', 'madara-coin-rewards' ),
+		);
+
 		foreach ( array( 'checkin', 'dashboard', 'ads', 'buy_coins', 'transactions', 'balance' ) as $page ) {
 			add_settings_field(
 				'mcr_field_template_layout_' . $page,
-				__( ucfirst( str_replace( '_', ' ', $page ) ) . ' layout', 'madara-coin-rewards' ),
+				sprintf(
+					/* translators: %s: the name of the coin-rewards page, for example "Dashboard". */
+					__( '%s layout', 'madara-coin-rewards' ),
+					$page_names[ $page ]
+				),
 				array( $this, 'render_field_select' ),
 				self::PAGE_SLUG,
 				'mcr_section_templates',
 				array(
 					'key'     => 'template.layout_' . $page,
-					'label'   => __( 'Template layout for the ' . ucfirst( str_replace( '_', ' ', $page ) ) . ' page.', 'madara-coin-rewards' ),
+					'label'   => sprintf(
+						/* translators: %s: the name of the coin-rewards page, for example "Dashboard". */
+						__( 'Template layout for the %s page.', 'madara-coin-rewards' ),
+						$page_names[ $page ]
+					),
 					'options' => $layouts,
 				)
 			);
@@ -420,13 +443,21 @@ class SettingsPage {
 		foreach ( array( 'checkin', 'dashboard', 'ads', 'buy_coins', 'transactions' ) as $page ) {
 			add_settings_field(
 				'mcr_field_pages_' . $page,
-				__( ucfirst( str_replace( '_', ' ', $page ) ) . ' page ID', 'madara-coin-rewards' ),
+				sprintf(
+					/* translators: %s: the name of the coin-rewards page, for example "Dashboard". */
+					__( '%s page ID', 'madara-coin-rewards' ),
+					$page_names[ $page ]
+				),
 				array( $this, 'render_field_number' ),
 				self::PAGE_SLUG,
 				'mcr_section_pages',
 				array(
 					'key'   => 'pages.' . $page,
-					'label' => __( 'ID of the WordPress page assigned to ' . ucfirst( str_replace( '_', ' ', $page ) ) . '. Enter 0 to use a shortcode.', 'madara-coin-rewards' ),
+					'label' => sprintf(
+						/* translators: %s: the name of the coin-rewards page, for example "Dashboard". */
+						__( 'ID of the WordPress page assigned to %s. Enter 0 to use a shortcode.', 'madara-coin-rewards' ),
+						$page_names[ $page ]
+					),
 					'min'   => 0,
 					'step'  => 1,
 				)

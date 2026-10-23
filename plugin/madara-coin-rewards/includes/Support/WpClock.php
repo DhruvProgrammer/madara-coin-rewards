@@ -81,7 +81,7 @@ class WpClock implements Clock {
 	 */
 	public function seconds_until_next_day() {
 		$moment = $this->now();
-		$next   = $moment->setTime( 0, 0, 0 )->modify( '+1 day' );
+		$next   = $moment->modify( '+1 day' )->setTime( 0, 0, 0 );
 
 		$seconds = $next->getTimestamp() - $moment->getTimestamp();
 

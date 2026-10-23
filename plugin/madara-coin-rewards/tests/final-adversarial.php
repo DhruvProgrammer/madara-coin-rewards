@@ -314,6 +314,28 @@ class MCR_Adv_WPDB {
 			return $this->insert_checkin( $m[1] );
 		}
 
+		// UPDATE ... mcr_balances SET purchased_total = purchased_total - N ...
+		// (the refund path restores the purchased counter in its own statement)
+		if ( preg_match( '/^UPDATE .*mcr_balances.*SET purchased_total\s*=\s*purchased_total\s*-\s*(\d+)/s', $sql, $pm ) ) {
+			$amount  = (int) $pm[1];
+			$user_id = 0;
+
+			if ( preg_match( '/WHERE user_id\s*=\s*(\d+)/', $sql, $um ) ) {
+				$user_id = (int) $um[1];
+			}
+
+			if ( ! isset( $this->balances[ $user_id ] ) ) {
+				$this->rows_affected = 0;
+
+				return 0;
+			}
+
+			$this->balances[ $user_id ]['purchased_total'] -= $amount;
+			$this->rows_affected = 1;
+
+			return 1;
+		}
+
 		// UPDATE ... mcr_balances SET balance = balance - N ...
 		if ( preg_match( '/^UPDATE .*mcr_balances.*SET balance\s*=\s*balance\s*-\s*(-?\d+)/s', $sql ) ) {
 			return $this->update_balance( $sql );
@@ -681,6 +703,13 @@ class MCR_Adv_WPDB {
 			$user_id = (int) $m[1];
 
 			return isset( $this->balances[ $user_id ] ) ? $this->balances[ $user_id ]['balance'] : null;
+		}
+
+		// SELECT purchased_total FROM ... mcr_balances WHERE user_id = N.
+		if ( preg_match( '/SELECT purchased_total FROM .*mcr_balances WHERE user_id = (\d+)/', $sql, $m ) ) {
+			$user_id = (int) $m[1];
+
+			return isset( $this->balances[ $user_id ] ) ? $this->balances[ $user_id ]['purchased_total'] : null;
 		}
 
 		// SELECT COALESCE(SUM(amount), 0) FROM ... mcr_transactions WHERE user_id = N.

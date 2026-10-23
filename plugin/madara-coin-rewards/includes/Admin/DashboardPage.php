@@ -166,7 +166,7 @@ class DashboardPage {
 		$ledger   = $wpdb->prefix . 'mcr_transactions';
 		$checkins = $wpdb->prefix . 'mcr_checkins';
 
-		$today = gmdate( 'Y-m-d', current_time( 'timestamp', true ) );
+		$today = \MCR\Container::instance()->clock()->today_key();
 
 		// No WHERE clause, so there is nothing to prepare.
 		$total_users = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$balances}" );

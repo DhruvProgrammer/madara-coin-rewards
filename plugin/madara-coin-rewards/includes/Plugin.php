@@ -82,6 +82,9 @@ class Plugin {
 		// The theme bridge lets the plugin adopt the site's accent colour.
 		add_action( 'wp_head', array( Integrations\Madara::class, 'print_theme_bridge' ), 20 );
 
+		// The rewards pages run without the theme's sidebar.
+		Integrations\FullWidth::register();
+
 		// User profile panel.
 		add_action( 'show_user_profile', array( Integrations\Profile::class, 'render_profile_panel' ) );
 		add_action( 'edit_user_profile', array( Integrations\Profile::class, 'render_profile_panel' ) );

@@ -753,14 +753,22 @@ class GenericS2S extends Provider {
 				'id'          => 'signature_header',
 				'label'       => __( 'Signature header', 'madara-coin-rewards' ),
 				'type'        => 'text',
-				'description' => __( 'Header carrying the HMAC. Default: ' . self::DEFAULT_SIGNATURE_HEADER . '.', 'madara-coin-rewards' ),
+				'description' => sprintf(
+					/* translators: %s: the default HTTP header that carries the HMAC signature. */
+					__( 'Header carrying the HMAC. Default: %s.', 'madara-coin-rewards' ),
+					self::DEFAULT_SIGNATURE_HEADER
+				),
 				'default'     => self::DEFAULT_SIGNATURE_HEADER,
 			),
 			array(
 				'id'          => 'timestamp_header',
 				'label'       => __( 'Timestamp header', 'madara-coin-rewards' ),
 				'type'        => 'text',
-				'description' => __( 'Header carrying a unix timestamp for the 300 second replay window; leave empty to disable that check. Default: ' . self::DEFAULT_TIMESTAMP_HEADER . '.', 'madara-coin-rewards' ),
+				'description' => sprintf(
+					/* translators: %s: the default HTTP header that carries the unix timestamp. */
+					__( 'Header carrying a unix timestamp for the 300 second replay window; leave empty to disable that check. Default: %s.', 'madara-coin-rewards' ),
+					self::DEFAULT_TIMESTAMP_HEADER
+				),
 				'default'     => self::DEFAULT_TIMESTAMP_HEADER,
 			),
 			array(

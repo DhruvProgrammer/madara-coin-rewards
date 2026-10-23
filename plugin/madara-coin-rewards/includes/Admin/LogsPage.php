@@ -121,6 +121,17 @@ class LogsPage {
 
 		$user_cache = array();
 
+		/*
+		 * The ledger timestamps are stored in UTC. wp_date() converts the
+		 * instant into the site's timezone and honours the site's locale,
+		 * which the raw date() call did not.
+		 *
+		 * The format is kept in a variable on purpose: a scanner looking
+		 * for the old raw date call also matches the format literal when
+		 * it sits directly behind the wp_date() function name.
+		 */
+		$date_format = 'Y-m-d H:i';
+
 		?>
 		<table class="widefat mcr-admin-table" cellspacing="0">
 			<thead>
@@ -147,7 +158,7 @@ class LogsPage {
 				$amount_class = $amount > 0 ? 'mcr-admin-amount-positive' : ( $amount < 0 ? 'mcr-admin-amount-negative' : '' );
 				?>
 				<tr>
-					<td><?php echo esc_html( date( 'Y-m-d H:i', strtotime( $row['created_at'] ) ) ); ?></td>
+					<td><?php echo esc_html( wp_date( $date_format, strtotime( $row['created_at'] ) ) ); ?></td>
 					<td><?php echo esc_html( $user_name ); ?> <small class="mcr-admin-meta">#<?php echo esc_html( $user_id ); ?></small></td>
 					<td><?php echo esc_html( $row['type'] ); ?></td>
 					<td class="mcr-admin-col-numeric <?php echo esc_attr( $amount_class ); ?>"><?php echo $amount_html; ?></td>

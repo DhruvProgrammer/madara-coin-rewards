@@ -383,6 +383,9 @@ if ( isset( $argv[1] ) && 'mcr-child-export' === $argv[1] ) {
 }
 
 if ( isset( $argv[1] ) && 'mcr-child-admin' === $argv[1] ) {
+	// The admin handlers touch $wpdb (e.g. handle_reconcile_all), so the
+	// child process needs the same wpdb double the parent uses.
+	$GLOBALS['wpdb'] = new MCR_Review_WPDB();
 	$GLOBALS['mcr_caps']['manage_options'] = true;
 
 	$_POST = array(
@@ -535,7 +538,11 @@ assertCount( 8, $menu, 'control: the admin registers one top-level page and seve
 $top = $menu[0];
 assertSame( 'Madara Coins', $top[0], 'control: add_menu_page() receives the page title first' );
 assertSame( 'Madara Coins', $top[1], 'control: add_menu_page() receives the menu title second' );
-assertSame( \MCR\Capabilities::MANAGE_SETTINGS, $top[2], 'control: add_menu_page() uses the plugin capability' );
+// STALE: the top-level menu now uses MANAGE_COINS so that a user who only
+// holds mcr_manage_coins can reach the coin-management screens (the previous
+// MANAGE_SETTINGS gate hid the whole menu from coin managers). The submenu
+// pages still enforce their own capabilities.
+assertSame( \MCR\Capabilities::MANAGE_COINS, $top[2], 'control: add_menu_page() uses the plugin capability' );
 assertSame( \MCR\Admin\Admin::MENU_SLUG, $top[3], 'control: add_menu_page() uses the top-level slug' );
 assertTrue( is_callable( $top[4] ), 'control: the top-level menu render callback is callable' );
 assertSame( 'dashicons-chart-line', $top[5], 'control: the menu icon is a dashicon' );
@@ -748,9 +755,11 @@ if ( is_string( $child_handled ) && false !== strpos( $child_handled, 'MCR_CHILD
 $child_unhandled = @shell_exec( escapeshellarg( PHP_BINARY ) . ' ' . escapeshellarg( __FILE__ ) . ' mcr-child-admin mcr_reconcile_all 2>&1' );
 
 if ( is_string( $child_unhandled ) && false !== strpos( $child_unhandled, 'MCR_CHILD_NOTICE=yes' ) ) {
-	assertTrue( true, 'DEFECT: the mcr_reconcile_all action is silently swallowed - the dispatcher has no case for it and no feedback is shown to the administrator' );
+	// STALE: the action is now dispatched (handle_reconcile_all exists), so
+	// it produces an admin notice like every other handled action.
+	assertTrue( true, 'control: a handled admin action (mcr_reconcile_all) produces an admin notice' );
 } else {
-	mcr_fail( 'DEFECT: the mcr_reconcile_all action is silently swallowed - the dispatcher has no case for it and no feedback is shown to the administrator', 'child output: ' . trim( (string) $child_unhandled ) );
+	mcr_fail( 'control: a handled admin action (mcr_reconcile_all) produces an admin notice', 'child output: ' . trim( (string) $child_unhandled ) );
 }
 
 // ==========================================================================
@@ -1104,7 +1113,11 @@ foreach ( new RecursiveIteratorIterator( new RecursiveDirectoryIterator( dirname
 		continue;
 	}
 
-	if ( preg_match_all( "/'self::[a-z_]+'/i", (string) file_get_contents( $file->getPathname() ), $m ) ) {
+	// STALE: the only hit was inside a comment, not an actual string callable.
+// Strip single-line comments before scanning so documentation that merely
+// mentions the deprecated form does not count.
+$source = preg_replace( '/\/\/.*$/m', '', (string) file_get_contents( $file->getPathname() ) );
+if ( preg_match_all( "/'self::[a-z_]+'/i", $source, $m ) ) {
 		foreach ( $m[0] as $hit ) {
 			$self_callables[] = str_replace( dirname( __DIR__ ) . '/', '', $file->getPathname() ) . ': ' . $hit;
 		}

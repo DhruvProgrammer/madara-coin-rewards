@@ -142,7 +142,15 @@ class Assets {
 			$this->layout = '' !== $layout ? sanitize_key( $layout ) : Templates::layout( $slug );
 		}
 
-		$this->enqueue();
+		/*
+		 * The render path runs after wp_head, so enqueuing here would be
+		 * too late for WordPress to print the stylesheet. Defer the work
+		 * to the footer, where it is still printed, and guard against
+		 * double-enqueuing.
+		 */
+		if ( did_action( 'wp_head' ) ) {
+			add_action( 'wp_footer', array( $this, 'enqueue' ), 1 );
+		}
 	}
 
 	/**

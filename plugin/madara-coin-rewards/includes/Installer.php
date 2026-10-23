@@ -141,16 +141,18 @@ class Installer {
 		$schema = array();
 
 		$schema[] = "CREATE TABLE {$prefix}balances (
-  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  user_id bigint(20) unsigned NOT NULL,
-  balance bigint(20) NOT NULL DEFAULT 0,
-  lifetime_earned bigint(20) NOT NULL DEFAULT 0,
-  lifetime_spent bigint(20) NOT NULL DEFAULT 0,
-  purchased_total bigint(20) NOT NULL DEFAULT 0,
+  id bigint unsigned NOT NULL AUTO_INCREMENT,
+  user_id bigint unsigned NOT NULL,
+  balance bigint NOT NULL DEFAULT 0,
+  lifetime_earned bigint NOT NULL DEFAULT 0,
+  lifetime_spent bigint NOT NULL DEFAULT 0,
+  purchased_total bigint NOT NULL DEFAULT 0,
   updated_at datetime NOT NULL DEFAULT '1970-01-01 00:00:00',
   PRIMARY KEY  (id),
   UNIQUE KEY user_id (user_id),
-  KEY balance (balance)
+  KEY balance (balance),
+  KEY lifetime_earned (lifetime_earned),
+  KEY lifetime_spent (lifetime_spent)
 ) $charset_collate ENGINE=InnoDB;";
 
 		$schema[] = "CREATE TABLE {$prefix}transactions (
@@ -158,12 +160,12 @@ class Installer {
   user_id bigint unsigned NOT NULL,
   txn_uid char(36) NOT NULL DEFAULT '',
   type varchar(32) NOT NULL DEFAULT '',
-  amount bigint(20) NOT NULL DEFAULT 0,
-  balance_after bigint(20) NOT NULL DEFAULT 0,
+  amount bigint NOT NULL DEFAULT 0,
+  balance_after bigint NOT NULL DEFAULT 0,
   reason varchar(191) NOT NULL DEFAULT '',
   source varchar(32) NOT NULL DEFAULT '',
   ref_type varchar(32) NOT NULL DEFAULT '',
-  ref_id bigint(20) unsigned NOT NULL DEFAULT 0,
+  ref_id bigint unsigned NOT NULL DEFAULT 0,
   idempotency_key varchar(191) NOT NULL DEFAULT '',
   ip varchar(45) NOT NULL DEFAULT '',
   user_agent varchar(255) NOT NULL DEFAULT '',
@@ -180,14 +182,14 @@ class Installer {
 ) $charset_collate ENGINE=InnoDB;";
 
 		$schema[] = "CREATE TABLE {$prefix}checkins (
-  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  user_id bigint(20) unsigned NOT NULL,
+  id bigint unsigned NOT NULL AUTO_INCREMENT,
+  user_id bigint unsigned NOT NULL,
   checkin_date date NOT NULL DEFAULT '1970-01-01',
-  streak_count int(10) unsigned NOT NULL DEFAULT 1,
-  base_amount bigint(20) NOT NULL DEFAULT 0,
-  bonus_amount bigint(20) NOT NULL DEFAULT 0,
-  total_amount bigint(20) NOT NULL DEFAULT 0,
-  transaction_id bigint(20) unsigned NOT NULL DEFAULT 0,
+  streak_count int unsigned NOT NULL DEFAULT 1,
+  base_amount bigint NOT NULL DEFAULT 0,
+  bonus_amount bigint NOT NULL DEFAULT 0,
+  total_amount bigint NOT NULL DEFAULT 0,
+  transaction_id bigint unsigned NOT NULL DEFAULT 0,
   ip varchar(45) NOT NULL DEFAULT '',
   created_at datetime NOT NULL DEFAULT '1970-01-01 00:00:00',
   PRIMARY KEY  (id),
@@ -196,15 +198,15 @@ class Installer {
 ) $charset_collate ENGINE=InnoDB;";
 
 		$schema[] = "CREATE TABLE {$prefix}ad_sessions (
-  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  user_id bigint(20) unsigned NOT NULL,
+  id bigint unsigned NOT NULL AUTO_INCREMENT,
+  user_id bigint unsigned NOT NULL,
   ad_id varchar(64) NOT NULL DEFAULT '',
   provider varchar(32) NOT NULL DEFAULT '',
   session_token char(64) NOT NULL DEFAULT '',
   completion_token varchar(191) NOT NULL DEFAULT '',
   day_key date NOT NULL DEFAULT '1970-01-01',
   status varchar(20) NOT NULL DEFAULT 'pending',
-  coins int(11) NOT NULL DEFAULT 0,
+  coins int NOT NULL DEFAULT 0,
   ip varchar(45) NOT NULL DEFAULT '',
   created_at datetime NOT NULL DEFAULT '1970-01-01 00:00:00',
   expires_at datetime NOT NULL DEFAULT '1970-01-01 00:00:00',
@@ -219,15 +221,15 @@ class Installer {
 ) $charset_collate ENGINE=InnoDB;";
 
 		$schema[] = "CREATE TABLE {$prefix}payments (
-  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  user_id bigint(20) unsigned NOT NULL,
+  id bigint unsigned NOT NULL AUTO_INCREMENT,
+  user_id bigint unsigned NOT NULL,
   package_id varchar(64) NOT NULL DEFAULT '',
   gateway varchar(32) NOT NULL DEFAULT '',
   order_id varchar(64) NOT NULL DEFAULT '',
   provider_tx_id varchar(128) NOT NULL DEFAULT '',
   amount decimal(12,2) NOT NULL DEFAULT 0.00,
   currency varchar(8) NOT NULL DEFAULT '',
-  coins_total bigint(20) NOT NULL DEFAULT 0,
+  coins_total bigint NOT NULL DEFAULT 0,
   status varchar(20) NOT NULL DEFAULT 'pending',
   user_ip varchar(45) NOT NULL DEFAULT '',
   user_agent varchar(255) NOT NULL DEFAULT '',
@@ -238,16 +240,17 @@ class Installer {
   UNIQUE KEY order_id (order_id),
   UNIQUE KEY gateway_provider_tx (gateway,provider_tx_id),
   KEY user_status (user_id,status),
-  KEY status_expires (status,expires_at)
+  KEY status_expires (status,expires_at),
+  KEY user_id_id (user_id,id)
 ) $charset_collate ENGINE=InnoDB;";
 
 		$schema[] = "CREATE TABLE {$prefix}claims (
-  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  user_id bigint(20) unsigned NOT NULL,
+  id bigint unsigned NOT NULL AUTO_INCREMENT,
+  user_id bigint unsigned NOT NULL,
   claim_key varchar(191) NOT NULL DEFAULT '',
   claim_type varchar(32) NOT NULL DEFAULT '',
-  amount bigint(20) NOT NULL DEFAULT 0,
-  transaction_id bigint(20) unsigned NOT NULL DEFAULT 0,
+  amount bigint NOT NULL DEFAULT 0,
+  transaction_id bigint unsigned NOT NULL DEFAULT 0,
   created_at datetime NOT NULL DEFAULT '1970-01-01 00:00:00',
   PRIMARY KEY  (id),
   UNIQUE KEY claim_key (claim_key),
@@ -258,7 +261,47 @@ class Installer {
 			dbDelta( $table );
 		}
 
+		self::migrate_indexes();
+
 		self::verify_engine();
+	}
+
+	/**
+	 * Explicit, idempotent index migration.
+	 *
+	 * Guarded by an information_schema check so a column drift can never
+	 * turn into a full table copy of the ledger.
+	 *
+	 * @return void
+	 */
+	public static function migrate_indexes() {
+		global $wpdb;
+
+		$migrations = array(
+			$wpdb->prefix . 'mcr_balances' => array(
+				'lifetime_earned' => 'ALTER TABLE ' . $wpdb->prefix . 'mcr_balances ADD KEY lifetime_earned (lifetime_earned)',
+				'lifetime_spent'  => 'ALTER TABLE ' . $wpdb->prefix . 'mcr_balances ADD KEY lifetime_spent (lifetime_spent)',
+			),
+			$wpdb->prefix . 'mcr_payments' => array(
+				'user_id_id' => 'ALTER TABLE ' . $wpdb->prefix . 'mcr_payments ADD KEY user_id_id (user_id, id)',
+			),
+		);
+
+		foreach ( $migrations as $table => $statements ) {
+			foreach ( $statements as $index_name => $sql ) {
+				$exists = (int) $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND INDEX_NAME = %s", // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+						$table,
+						$index_name
+					)
+				);
+
+				if ( ! $exists ) {
+					$wpdb->query( $sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				}
+			}
+		}
 	}
 
 	/**

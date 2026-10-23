@@ -66,6 +66,7 @@ class Rest {
 				'methods'             => 'GET',
 				'callback'            => array( $this, 'get_balance' ),
 				'permission_callback' => array( $this, 'permission_logged_in' ),
+				'args'             => array(),
 			)
 		);
 
@@ -76,6 +77,7 @@ class Rest {
 				'methods'             => 'POST',
 				'callback'            => array( $this, 'post_checkin' ),
 				'permission_callback' => array( $this, 'permission_logged_in' ),
+				'args'             => array(),
 			)
 		);
 
@@ -86,6 +88,7 @@ class Rest {
 				'methods'             => 'POST',
 				'callback'            => array( $this, 'post_ad_start' ),
 				'permission_callback' => array( $this, 'permission_logged_in' ),
+				'args'             => array(),
 			)
 		);
 
@@ -96,6 +99,7 @@ class Rest {
 				'methods'             => 'POST',
 				'callback'            => array( $this, 'post_ad_verify' ),
 				'permission_callback' => array( $this, 'permission_logged_in' ),
+				'args'             => array(),
 			)
 		);
 
@@ -106,6 +110,7 @@ class Rest {
 				'methods'             => 'GET',
 				'callback'            => array( $this, 'get_packages' ),
 				'permission_callback' => '__return_true',
+				'args'             => array(),
 			)
 		);
 
@@ -116,6 +121,7 @@ class Rest {
 				'methods'             => 'POST',
 				'callback'            => array( $this, 'post_order' ),
 				'permission_callback' => array( $this, 'permission_logged_in' ),
+				'args'             => array(),
 			)
 		);
 
@@ -126,6 +132,7 @@ class Rest {
 				'methods'             => 'GET',
 				'callback'            => array( $this, 'get_order' ),
 				'permission_callback' => array( $this, 'permission_logged_in' ),
+				'args'             => array(),
 			)
 		);
 
@@ -136,6 +143,7 @@ class Rest {
 				'methods'             => 'GET',
 				'callback'            => array( $this, 'get_transactions' ),
 				'permission_callback' => array( $this, 'permission_logged_in' ),
+				'args'             => array(),
 			)
 		);
 
@@ -146,6 +154,7 @@ class Rest {
 				'methods'             => 'GET',
 				'callback'            => array( $this, 'get_dashboard' ),
 				'permission_callback' => array( $this, 'permission_logged_in' ),
+				'args'             => array(),
 			)
 		);
 

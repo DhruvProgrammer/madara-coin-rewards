@@ -1384,6 +1384,29 @@ class Review_WPDB {
 			return array( array( 'count' => count( $matched ) ) );
 		}
 
+		/*
+		 * A conditional aggregate: COALESCE( SUM( CASE WHEN <cond> THEN <expr>
+		 * ELSE <expr> END ), 0 ).
+		 *
+		 * The repair tool recomputes the lifetime counters with exactly
+		 * this shape, so the harness has to understand it - otherwise the
+		 * recomputed value silently reads as 0 and the repair looks broken
+		 * when it is not.
+		 */
+		if ( preg_match( '/^COALESCE\(\s*SUM\(\s*CASE\s+WHEN\s+(.+?)\s+THEN\s+(.+?)\s+ELSE\s+(.+?)\s+END\s*\)\s*,\s*0\s*\)$/is', $cols, $m ) ) {
+			$sum = 0;
+
+			foreach ( $matched as $row ) {
+				if ( ! $this->case_when_matches( $row, $m[1] ) ) {
+					continue;
+				}
+
+				$sum += (float) $this->case_value( $row, $m[2] );
+			}
+
+			return array( array( 'sum' => $sum ) );
+		}
+
 		if ( preg_match( '/COALESCE\(\s*SUM\(\s*([A-Za-z0-9_]+)\s*\)\s*,\s*0\s*\)/i', $cols, $m ) ) {
 			$sum = 0;
 
@@ -1430,6 +1453,186 @@ class Review_WPDB {
 		}
 
 		return $out;
+	}
+
+	/**
+	 * Evaluates a CASE WHEN condition against a row.
+	 *
+	 * The supported grammar is the one the plugin actually uses:
+	 * comparisons ( =, !=, <>, <, <=, >, >= ), IN and NOT IN, combined
+	 * with AND and OR. AND binds tighter than OR, as in SQL.
+	 *
+	 * @param array  $row       Row.
+	 * @param string $condition Condition.
+	 * @return bool
+	 */
+	private function case_when_matches( array $row, $condition ) {
+		$condition = trim( (string) $condition );
+
+		if ( '' === $condition ) {
+			return true;
+		}
+
+		foreach ( $this->split_logical( $condition, 'OR' ) as $or_part ) {
+			$matched = true;
+
+			foreach ( $this->split_logical( $or_part, 'AND' ) as $and_part ) {
+				if ( ! $this->case_condition_matches( $row, trim( $and_part ) ) ) {
+					$matched = false;
+					break;
+				}
+			}
+
+			if ( $matched ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Evaluates one comparison of a CASE WHEN condition.
+	 *
+	 * @param array  $row       Row.
+	 * @param string $condition Condition.
+	 * @return bool
+	 */
+	private function case_condition_matches( array $row, $condition ) {
+		if ( '' === $condition ) {
+			return true;
+		}
+
+		if ( preg_match( '/^`?([A-Za-z0-9_]+)`?\s+(NOT\s+)?IN\s*\((.*)\)$/is', $condition, $m ) ) {
+			$col     = $m[1];
+			$negated = '' !== trim( $m[2] );
+			$actual  = (string) ( $row[ $col ] ?? '' );
+			$found   = false;
+
+			foreach ( $this->split_top( $m[3] ) as $candidate ) {
+				if ( $actual === (string) $this->literal( trim( $candidate ) ) ) {
+					$found = true;
+					break;
+				}
+			}
+
+			return $negated ? ! $found : $found;
+		}
+
+		if ( ! preg_match( '/^`?([A-Za-z0-9_]+)`?\s*(<=|>=|<>|!=|=|<|>)\s*(.+)$/is', $condition, $m ) ) {
+			return false;
+		}
+
+		$col    = $m[1];
+		$op     = $m[2];
+		$actual = $row[ $col ] ?? null;
+		$want   = $this->literal( $m[3] );
+
+		if ( is_numeric( $actual ) && is_numeric( $want ) ) {
+			$actual = (float) $actual;
+			$want   = (float) $want;
+		} else {
+			$actual = (string) $actual;
+			$want   = (string) $want;
+		}
+
+		switch ( $op ) {
+			case '=':
+				return $actual == $want; // phpcs:ignore WordPress.PHP.StrictComparisons.LooseComparison
+			case '!=':
+			case '<>':
+				return $actual != $want; // phpcs:ignore WordPress.PHP.StrictComparisons.LooseComparison
+			case '>=':
+				return $actual >= $want;
+			case '<=':
+				return $actual <= $want;
+			case '>':
+				return $actual > $want;
+			case '<':
+				return $actual < $want;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Evaluates the THEN branch of a CASE WHEN expression.
+	 *
+	 * @param array  $row  Row.
+	 * @param string $expr Expression.
+	 * @return float
+	 */
+	private function case_value( array $row, $expr ) {
+		$expr = trim( (string) $expr );
+
+		if ( preg_match( '/^-([A-Za-z0-9_]+)$/', $expr, $m ) ) {
+			return -1 * (float) ( $row[ $m[1] ] ?? 0 );
+		}
+
+		if ( preg_match( '/^([A-Za-z0-9_]+)$/', $expr, $m ) ) {
+			return (float) ( $row[ $m[1] ] ?? 0 );
+		}
+
+		return (float) $this->literal( $expr );
+	}
+
+	/**
+	 * Splits a SQL expression on a top level AND or OR.
+	 *
+	 * The keyword is only a separator when it stands on its own, outside
+	 * quotes and outside parentheses.
+	 *
+	 * @param string $sql     SQL.
+	 * @param string $keyword AND or OR.
+	 * @return array
+	 */
+	private function split_logical( $sql, $keyword ) {
+		$parts = array();
+		$buf   = '';
+		$depth = 0;
+		$in_q  = false;
+		$len   = strlen( $sql );
+		$i     = 0;
+
+		while ( $i < $len ) {
+			$char = $sql[ $i ];
+
+			if ( "'" === $char ) {
+				$in_q = ! $in_q;
+				$buf .= $char;
+				++$i;
+				continue;
+			}
+
+			if ( ! $in_q ) {
+				if ( '(' === $char ) {
+					++$depth;
+				} elseif ( ')' === $char ) {
+					--$depth;
+				}
+			}
+
+			if ( ! $in_q && 0 === $depth && 0 === substr_compare( $sql, $keyword, $i, strlen( $keyword ) ) ) {
+				$before = ( $i > 0 ) ? $sql[ $i - 1 ] : ' ';
+				$after  = ( $i + strlen( $keyword ) < $len ) ? $sql[ $i + strlen( $keyword ) ] : ' ';
+
+				if ( ! preg_match( '/[A-Za-z0-9_]/', $before ) && ! preg_match( '/[A-Za-z0-9_]/', $after ) ) {
+					$parts[] = trim( $buf );
+					$buf     = '';
+					$i      += strlen( $keyword );
+					continue;
+				}
+			}
+
+			$buf .= $char;
+			++$i;
+		}
+
+		if ( '' !== trim( $buf ) ) {
+			$parts[] = trim( $buf );
+		}
+
+		return $parts;
 	}
 
 	/* ---------------------------------------------------------------------
@@ -1559,6 +1762,97 @@ class Review_Manual_Gateway extends \MCR\Gateways\Manual {
 	 */
 	public function call_credit_order( array $order, $reason = '' ) {
 		return $this->credit_order( $order, $reason );
+	}
+}
+
+/**
+ * A provider that confirms every completion server-side.
+ *
+ * It stands in for a client-SDK provider: the only difference to the
+ * bundled GenericS2S provider is that it confirms the completion itself
+ * instead of waiting for a network postback. It is used to prove that a
+ * genuinely UNVERIFIED session can still be verified - the "already
+ * verified" answer must only ever apply to a session that already
+ * reached a terminal state.
+ */
+class Review_Confirming_Provider extends \MCR\AdProviders\Provider {
+
+	/**
+	 * Provider slug.
+	 *
+	 * @return string
+	 */
+	public function get_id() {
+		return 'review_confirming';
+	}
+
+	/**
+	 * Provider title.
+	 *
+	 * @return string
+	 */
+	public function get_title() {
+		return 'Review confirming provider';
+	}
+
+	/**
+	 * Always configured.
+	 *
+	 * @return bool
+	 */
+	public function is_configured() {
+		return true;
+	}
+
+	/**
+	 * One rewarded unit.
+	 *
+	 * @return array
+	 */
+	public function get_ad_units() {
+		return array(
+			array(
+				'id'     => 'rewarded_video',
+				'title'  => 'Rewarded video',
+				'type'   => 'rewarded_video',
+				'params' => array(),
+			),
+		);
+	}
+
+	/**
+	 * Issues the SDK data for one watch attempt.
+	 *
+	 * @param array $args Session args.
+	 * @return array
+	 */
+	public function create_session( array $args ) {
+		return array(
+			'ad_unit'          => $this->get_ad_units()[0],
+			'sdk_params'       => array(),
+			'reward_coins'     => isset( $args['reward_coins'] ) ? (int) $args['reward_coins'] : 0,
+			'signature_header' => 'X-MCR-Signature',
+			'timestamp_header' => 'X-MCR-Timestamp',
+		);
+	}
+
+	/**
+	 * Confirms every completion.
+	 *
+	 * @param array $payload Completion payload.
+	 * @return true
+	 */
+	public function verify_completion( array $payload ) {
+		return true;
+	}
+
+	/**
+	 * No settings.
+	 *
+	 * @return array
+	 */
+	public function get_settings_fields() {
+		return array();
 	}
 }
 
@@ -2119,8 +2413,13 @@ assertSame( 1, $stats['today'], 'the ad stats count the credited S2S ad' );
 assertSame( 0, $stats['remaining'], 'the remaining ad allowance drops to zero' );
 
 /*
- * The client side "my ad is done" call must not fail once the network has
- * confirmed the ad and the coins are already in the account.
+ * The client side "my ad is done" call arrives AFTER the network has
+ * already confirmed the ad and the coins are in the account.
+ *
+ * "verified" (client path) and "credited" (server-to-server path) are
+ * BOTH terminal states: the ad was watched and it was paid for. So the
+ * client call reports "already verified" - it must never pay the reward a
+ * second time, and it must not pretend to have granted anything either.
  */
 \MCR\Settings::update( array( 'ads.daily_limit' => 5 ) );
 \MCR\Settings::flush_cache();
@@ -2134,10 +2433,114 @@ $verify = \MCR\Rewards\AdSessions::instance()->verify(
 );
 
 assertSame(
-	'',
+	'mcr_already_verified',
 	is_wp_error( $verify ) ? $verify->get_error_code() : '',
-	'the client verification succeeds once the network confirmed the ad (the status vocabulary must match)'
+	'the client verification reports "already verified" once the network confirmed the ad (the status vocabulary must match)'
 );
+
+assertSame(
+	5,
+	$ledger->get_balance( $postback_user ),
+	'the client re-verification never pays the reward a second time'
+);
+
+/*
+ * The mirror image of the assertion above: a session that has NOT reached
+ * a terminal state yet must still be verifiable, otherwise the client
+ * path would be dead and every rewarded ad would be lost.
+ */
+mcr_group( 'Ad rewards: a session that is not terminal yet can still be verified' );
+
+$GLOBALS['mcr_filters']['mcr_register_ad_providers'] = array(
+	function ( $instances ) {
+		$instances['review_confirming'] = new Review_Confirming_Provider( array() );
+
+		return $instances;
+	},
+);
+
+\MCR\AdProviders\Registry::reset();
+
+\MCR\Settings::update(
+	array(
+		'ads.provider'       => 'review_confirming',
+		'ads.coins_per_ad'   => 5,
+		'ads.daily_limit'    => 5,
+		'ads.global_daily_limit' => 0,
+		'ads.cooldown_seconds'   => 0,
+	)
+);
+
+\MCR\Settings::flush_cache();
+
+$client_user = 33;
+
+$client_session = \MCR\Rewards\AdSessions::instance()->start( $client_user, array( 'ad_id' => 'rewarded_video' ) );
+
+assertFalse(
+	is_wp_error( $client_session ),
+	'the ad session starts with a provider that confirms completions'
+);
+
+$client_verify = \MCR\Rewards\AdSessions::instance()->verify(
+	$client_user,
+	array(
+		'session_token'    => $client_session['session_token'],
+		'completion_token' => 'completion-1',
+	)
+);
+
+assertFalse(
+	is_wp_error( $client_verify ),
+	'a genuinely unverified session is verified and paid out'
+);
+
+assertSame(
+	5,
+	$ledger->get_balance( $client_user ),
+	'the verified ad pays the reward exactly once'
+);
+
+$client_status = '';
+
+foreach ( $wpdb->ad_sessions as $row ) {
+	if ( (string) $row['session_token'] === (string) $client_session['session_token'] ) {
+		$client_status = (string) $row['status'];
+	}
+}
+
+assertSame( 'verified', $client_status, 'the verified session reaches the "verified" terminal state' );
+
+$client_reverify = \MCR\Rewards\AdSessions::instance()->verify(
+	$client_user,
+	array(
+		'session_token'    => $client_session['session_token'],
+		'completion_token' => 'completion-1',
+	)
+);
+
+assertSame(
+	'mcr_already_verified',
+	is_wp_error( $client_reverify ) ? $client_reverify->get_error_code() : '',
+	'a second verification of the same session reports "already verified"'
+);
+
+assertSame(
+	5,
+	$ledger->get_balance( $client_user ),
+	'the second verification never pays the reward a second time'
+);
+
+/*
+ * Restore the bundled provider for the sections that follow.
+ */
+$GLOBALS['mcr_filters']['mcr_register_ad_providers'] = array();
+
+\MCR\AdProviders\Registry::reset();
+
+\MCR\Settings::update( array( 'ads.provider' => 'generic_s2s' ) );
+
+\MCR\Settings::flush_cache();
 
 /* =========================================================================
  * 13. Package maths

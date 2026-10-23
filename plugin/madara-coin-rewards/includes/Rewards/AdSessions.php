@@ -186,7 +186,7 @@ class AdSessions {
 				"SELECT COUNT(*) FROM {$table}
 				 WHERE " . self::counted_status_sql() . "
 				   AND verified_at > %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				gmdate( 'Y-m-d H:i:s', $clock->now()->getTimestamp() - DAY_IN_SECONDS )
+				gmdate( 'Y-m-d H:i:s', $clock->now()->getTimestamp() - \DAY_IN_SECONDS )
 			)
 		);
 
@@ -558,9 +558,9 @@ class AdSessions {
 		$table   = $wpdb->prefix . 'mcr_ad_sessions';
 		$clock   = Container::instance()->clock();
 
-		$today = (int) $wpdb->get_var(
+		$today_row = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$table}
+				"SELECT COUNT(*) AS cnt, COALESCE(SUM(coins), 0) AS coins FROM {$table}
 				 WHERE user_id = %d
 				   AND " . self::counted_status_sql() . "
 				   AND verified_at >= %s
@@ -568,26 +568,12 @@ class AdSessions {
 				$user_id,
 				$clock->now()->setTime( 0, 0, 0 )->setTimezone( new \DateTimeZone( 'UTC' ) )->format( 'Y-m-d H:i:s' ),
 				$clock->now()->setTime( 0, 0, 0 )->modify( '+1 day' )->setTimezone( new \DateTimeZone( 'UTC' ) )->format( 'Y-m-d H:i:s' )
-			)
+			),
+			\ARRAY_A
 		);
 
-		/*
-		 * The coins the ad sessions REALLY paid today. The sum is used
-		 * rather than the count times the current rate, because the rate
-		 * can be changed while the day is running.
-		 */
-		$coins_today = (int) $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT COALESCE(SUM(coins), 0) FROM {$table}
-				 WHERE user_id = %d
-				   AND " . self::counted_status_sql() . "
-				   AND verified_at >= %s
-				   AND verified_at < %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$user_id,
-				$clock->now()->setTime( 0, 0, 0 )->setTimezone( new \DateTimeZone( 'UTC' ) )->format( 'Y-m-d H:i:s' ),
-				$clock->now()->setTime( 0, 0, 0 )->modify( '+1 day' )->setTimezone( new \DateTimeZone( 'UTC' ) )->format( 'Y-m-d H:i:s' )
-			)
-		);
+		$today       = (int) ( is_array( $today_row ) ? ( $today_row['cnt'] ?? 0 ) : 0 );
+		$coins_today = (int) ( is_array( $today_row ) ? ( $today_row['coins'] ?? 0 ) : 0 );
 
 		$stats = array(
 			'today'      => $today,
@@ -602,19 +588,16 @@ class AdSessions {
 		 * for ever is not scanned on a page that does not need it.
 		 */
 		if ( $include_lifetime ) {
-			$stats['total'] = (int) $wpdb->get_var(
+			$lifetime_row = $wpdb->get_row(
 				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$table} WHERE user_id = %d AND " . self::counted_status_sql() . "", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					"SELECT COUNT(*) AS cnt, COALESCE(SUM(coins), 0) AS coins FROM {$table} WHERE user_id = %d AND " . self::counted_status_sql() . "", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					$user_id
-				)
+				),
+				\ARRAY_A
 			);
 
-			$stats['coins'] = (int) $wpdb->get_var(
-				$wpdb->prepare(
-					"SELECT COALESCE(SUM(coins), 0) FROM {$table} WHERE user_id = %d AND " . self::counted_status_sql() . "", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$user_id
-				)
-			);
+			$stats['total'] = (int) ( is_array( $lifetime_row ) ? ( $lifetime_row['cnt'] ?? 0 ) : 0 );
+			$stats['coins'] = (int) ( is_array( $lifetime_row ) ? ( $lifetime_row['coins'] ?? 0 ) : 0 );
 		}
 
 		$stats['coins_per_ad'] = (int) Settings::get( 'ads.coins_per_ad', 5 );

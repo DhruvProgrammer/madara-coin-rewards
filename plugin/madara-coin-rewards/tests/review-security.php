@@ -1249,7 +1249,7 @@ for ( $i = 0; $i < 4; $i++ ) {
 	$tokens[] = $session['session_token'];
 }
 
-assertCount( 1, $tokens, 'at most ads.daily_limit (1) ad session can be opened per day' );
+assertCount( 4, $tokens, 'sessions can be opened freely; the daily cap is enforced at credit time (cap_guard), not at session start' );
 
 $statuses = array();
 
@@ -1298,7 +1298,7 @@ foreach ( mcr_sec_rows( $wpdb, 'wp_mcr_ad_sessions' ) as $row ) {
 	}
 }
 
-assertSame( 4, $credited_rows, 'all four postbacks left a credited ad-session row' );
+assertSame( 1, $credited_rows, 'only the first postback is credited; the rest are refused by the daily cap' );
 
 // cap_guard() itself must refuse a user who already earned more than the cap.
 $guard = MCR\Rewards\AdSessions::instance()->cap_guard( 7, 0 );
@@ -1365,7 +1365,7 @@ foreach ( mcr_sec_sources() as $file ) {
 	}
 }
 
-assertCount( 0, $readers, 'no plugin source reads the rate-limit settings (they are dead settings)' );
+assertCount( 2, $readers, 'the rate-limit settings are now live: enforced in AdSessions.php and CheckIn.php' );
 
 /* ==========================================================================
  * 5. DEFECT: secrets are stored in plaintext although the UI claims otherwise

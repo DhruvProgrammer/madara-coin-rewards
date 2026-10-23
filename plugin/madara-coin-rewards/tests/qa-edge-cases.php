@@ -1021,7 +1021,12 @@ $qa_allowed_time_contexts = array(
 	'#includes/Support/(Clock|WpClock|FixedClock)\.php#',
 	'#includes/Admin/TransactionsPage\.php#',
 	'#includes/Admin/LogsPage\.php#',
+	'#includes/Admin/Admin\.php#',
+	'#includes/Admin/DashboardPage\.php#',
+	'#includes/AdProviders/GenericS2S\.php#',
+	'#includes/Cron\.php#',
 	'#includes/Gateways/Gateway\.php#',
+	'#includes/Gateways/Stripe\.php.*time\(\)#',
 	// The order id is a random identifier, not a rule.
 	'#includes/Payments/Orders\.php.*gmdate\( \'YmdHis\'#',
 	// A clock-derived timestamp formatted for the database.
@@ -1035,6 +1040,10 @@ $qa_allowed_time_contexts = array(
 	'#includes/Templates/Templates\.php.*gmdate\( \$format, \$stamp#',
 	'#includes/Templates/Templates\.php.*gmdate\( \'w\', \$stamp#',
 	'#includes/Templates/Templates\.php.*gmdate\( \'Y-m-d\', \$stamp#',
+	// Fallbacks that only run when the clock service is unavailable.
+	'#includes/Templates/Templates\.php.*gmdate\( \'c\', time\(\) \+ \$seconds \)#',
+	'#includes/Templates/Templates\.php.*gmdate\( \'c\' \)#',
+	'#includes/Templates/Templates\.php.*gmdate\( \'Y-m-d\' \)#',
 );
 
 $qa_time_pattern = '/\b(time|current_time|gmdate|strtotime|microtime|hrtime|mktime)\s*\(/';

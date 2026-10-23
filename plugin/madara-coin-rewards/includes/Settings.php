@@ -118,6 +118,27 @@ class Settings {
 	}
 
 	/**
+	 * The catalogue of strings the settings registry ships with.
+	 *
+	 * The defaults are built while the plugin boots, which is BEFORE the
+	 * init action, so the text domain is not loaded yet. Calling a
+	 * translation function at that point makes WordPress raise
+	 * "_load_textdomain_just_in_time was called incorrectly" on every
+	 * request, and the string is never translated.
+	 *
+	 * Every entry carries a literal message id, so a translator is able to
+	 * match it: a computed message id can never be translated.
+	 *
+	 * @return array Map of source string to translated string.
+	 */
+	private static function strings() {
+		return array(
+			'Daily reward claimed! Come back tomorrow to keep your streak.' => __( 'Daily reward claimed! Come back tomorrow to keep your streak.', 'madara-coin-rewards' ),
+			'Your coins have been added to your account.'                   => __( 'Your coins have been added to your account.', 'madara-coin-rewards' ),
+		);
+	}
+
+	/**
 	 * Translates a default string.
 	 *
 	 * The defaults are built while the plugin boots, which is BEFORE the
@@ -127,11 +148,13 @@ class Settings {
 	 * request, and the string is never translated.
 	 *
 	 * @param string $source The source string.
-	 * @return string
+	 * @return string The translated string, or the source when unknown.
 	 */
 	private static function text( $source ) {
 		if ( function_exists( 'did_action' ) && did_action( 'init' ) ) {
-			return __( $source, 'madara-coin-rewards' );
+			$strings = self::strings();
+
+			return isset( $strings[ $source ] ) ? $strings[ $source ] : $source;
 		}
 
 		return $source;
@@ -526,11 +549,21 @@ class Settings {
 				continue;
 			}
 
+			/*
+			 * The keys written here have to match the editable field list
+			 * of the packages page (Payments\Packages::fields()) exactly.
+			 *
+			 * The list used to be missing "max_bonus", so the per-package
+			 * bonus cap was silently dropped every time the packages form
+			 * was saved: the package round trip lost a field the read path
+			 * (Packages::normalize()) still expects.
+			 */
 			$clean[ $id ] = array(
 				'id'            => $id,
 				'title'         => isset( $package['title'] ) ? sanitize_text_field( $package['title'] ) : '',
 				'coins'         => $coins,
 				'bonus_percent' => isset( $package['bonus_percent'] ) ? max( 0, min( 100, (int) $package['bonus_percent'] ) ) : 0,
+				'max_bonus'     => isset( $package['max_bonus'] ) ? max( 0, (int) $package['max_bonus'] ) : 0,
 				'price'         => $price,
 				'currency'      => isset( $package['currency'] ) ? strtoupper( substr( sanitize_text_field( $package['currency'] ), 0, 8 ) ) : Settings::get( 'purchase.currency', 'USD' ),
 				'badge'         => isset( $package['badge'] ) ? sanitize_text_field( $package['badge'] ) : '',

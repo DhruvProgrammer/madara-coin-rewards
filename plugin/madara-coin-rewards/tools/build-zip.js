@@ -16,7 +16,10 @@ const root = path.resolve(__dirname, "..");
 const outDir = process.argv[2] || path.join(root, "..", "..", "..", "..");
 const outFile = path.join(outDir, "madara-coin-rewards.zip");
 
-const SKIP = new Set([".git", "node_modules", "vendor"]);
+// The installable package carries the plugin and its tests. The internal
+// review notes and the one-off patchers are development history, not
+// something a site should receive.
+const SKIP = new Set([".git", "node_modules", "vendor", "docs", "patches"]);
 
 function walk(dir, base = "", out = []) {
 	for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {

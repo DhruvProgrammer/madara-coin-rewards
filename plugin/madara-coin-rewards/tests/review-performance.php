@@ -458,6 +458,13 @@ function mcr_perf_reset( Perf_WPDB $wpdb ) {
 	$_GET  = array();
 	$_POST = array();
 
+	if ( class_exists( 'MCR\\Ledger' ) ) {
+		\MCR\Ledger::instance()->reset_balance_cache();
+	}
+
+	if ( class_exists( 'MCR\\Rewards\\CheckIn' ) ) {
+		\MCR\Rewards\CheckIn::instance()->reset_status_cache();
+	}
 	\MCR\Settings::flush_cache();
 }
 
