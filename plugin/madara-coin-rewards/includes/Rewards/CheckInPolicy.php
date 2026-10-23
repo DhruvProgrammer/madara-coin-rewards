@@ -129,22 +129,10 @@ class CheckInPolicy {
 		$options = wp_parse_args(
 			$options,
 			array(
-				'reason'        => __( 'Daily check-in reward', 'madara-coin-rewards' ),
-				'bonus_reason'  => __( 'Check-in streak bonus', 'madara-coin-rewards' ),
-				/*
-				 * The idempotency keys are scoped to the ATTEMPT.
-				 *
-				 * A failed grant is reversed, and a key that survives the
-				 * reversal would make every retry look like a duplicate
-				 * claim: the user would be locked out of the day with a
-				 * balance of zero. The caller passes the claim record's
-				 * id, which is new for every attempt.
-				 */
-				'attempt'       => '',
+				'reason'       => __( 'Daily check-in reward', 'madara-coin-rewards' ),
+				'bonus_reason' => __( 'Check-in streak bonus', 'madara-coin-rewards' ),
 			)
 		);
-
-		$attempt = '' !== (string) $options['attempt'] ? ':' . sanitize_key( (string) $options['attempt'] ) : '';
 
 		$user_id = (int) $user_id;
 		$today   = isset( $evaluation['date_key'] ) ? (string) $evaluation['date_key'] : $this->clock->today_key();
@@ -159,7 +147,7 @@ class CheckInPolicy {
 				'checkin',
 				$options['reason'],
 				array(
-					'idempotency_key' => 'checkin:' . $user_id . ':' . $today . $attempt,
+					'idempotency_key' => 'checkin:' . $user_id . ':' . $today,
 					'source'          => 'checkin',
 					'ref_type'        => 'checkin',
 					'ref_id'          => 0,
@@ -167,18 +155,6 @@ class CheckInPolicy {
 			);
 
 			if ( is_wp_error( $result ) ) {
-				/*
-				 * Nothing was paid. The caller removes the claim record
-				 * so the day is not locked, and the user can retry.
-				 */
-				$data = $result->get_error_data();
-				$data = is_array( $data ) ? $data : array();
-
-				$data['granted'] = 0;
-				$data['reversed'] = true;
-
-				$result->add_data( $data );
-
 				return $result;
 			}
 
@@ -200,7 +176,7 @@ class CheckInPolicy {
 				'checkin_bonus',
 				$options['bonus_reason'],
 				array(
-					'idempotency_key' => 'checkin_bonus:' . $user_id . ':' . $today . $attempt,
+					'idempotency_key' => 'checkin_bonus:' . $user_id . ':' . $today,
 					'source'          => 'checkin',
 					'ref_type'        => 'checkin',
 					'ref_id'          => 0,
@@ -227,7 +203,7 @@ class CheckInPolicy {
 						'reversal',
 						__( 'Reversed daily check-in reward', 'madara-coin-rewards' ),
 						array(
-							'idempotency_key' => 'checkin_reversal:' . $user_id . ':' . $today . $attempt,
+							'idempotency_key' => 'checkin_reversal:' . $user_id . ':' . $today,
 							'source'          => 'checkin',
 							'ref_type'        => 'checkin',
 							'ref_id'          => 0,
@@ -246,11 +222,6 @@ class CheckInPolicy {
 				}
 
 				$data['reversed'] = $reversed;
-				/*
-				 * What the user actually ends up with: nothing when the
-				 * reversal worked, the base reward when it did not.
-				 */
-				$data['granted']  = $reversed ? 0 : $base;
 				$data['status']   = isset( $data['status'] ) ? (int) $data['status'] : 500;
 
 				if ( ! $reversed ) {

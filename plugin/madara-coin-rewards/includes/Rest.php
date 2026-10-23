@@ -66,7 +66,6 @@ class Rest {
 				'methods'             => 'GET',
 				'callback'            => array( $this, 'get_balance' ),
 				'permission_callback' => array( $this, 'permission_logged_in' ),
-				'args'             => array(),
 			)
 		);
 
@@ -77,7 +76,6 @@ class Rest {
 				'methods'             => 'POST',
 				'callback'            => array( $this, 'post_checkin' ),
 				'permission_callback' => array( $this, 'permission_logged_in' ),
-				'args'             => array(),
 			)
 		);
 
@@ -88,7 +86,6 @@ class Rest {
 				'methods'             => 'POST',
 				'callback'            => array( $this, 'post_ad_start' ),
 				'permission_callback' => array( $this, 'permission_logged_in' ),
-				'args'             => array(),
 			)
 		);
 
@@ -99,7 +96,6 @@ class Rest {
 				'methods'             => 'POST',
 				'callback'            => array( $this, 'post_ad_verify' ),
 				'permission_callback' => array( $this, 'permission_logged_in' ),
-				'args'             => array(),
 			)
 		);
 
@@ -110,7 +106,6 @@ class Rest {
 				'methods'             => 'GET',
 				'callback'            => array( $this, 'get_packages' ),
 				'permission_callback' => '__return_true',
-				'args'             => array(),
 			)
 		);
 
@@ -121,7 +116,6 @@ class Rest {
 				'methods'             => 'POST',
 				'callback'            => array( $this, 'post_order' ),
 				'permission_callback' => array( $this, 'permission_logged_in' ),
-				'args'             => array(),
 			)
 		);
 
@@ -132,7 +126,6 @@ class Rest {
 				'methods'             => 'GET',
 				'callback'            => array( $this, 'get_order' ),
 				'permission_callback' => array( $this, 'permission_logged_in' ),
-				'args'             => array(),
 			)
 		);
 
@@ -143,7 +136,6 @@ class Rest {
 				'methods'             => 'GET',
 				'callback'            => array( $this, 'get_transactions' ),
 				'permission_callback' => array( $this, 'permission_logged_in' ),
-				'args'             => array(),
 			)
 		);
 
@@ -154,7 +146,6 @@ class Rest {
 				'methods'             => 'GET',
 				'callback'            => array( $this, 'get_dashboard' ),
 				'permission_callback' => array( $this, 'permission_logged_in' ),
-				'args'             => array(),
 			)
 		);
 
@@ -386,7 +377,16 @@ class Rest {
 	public function get_transactions( \WP_REST_Request $request ) {
 		$user_id = get_current_user_id();
 		$page    = max( 1, absint( $request->get_param( 'page' ) ) );
-		$per     = min( 50, max( 1, absint( $request->get_param( 'per_page' ) ) ) );
+
+		/*
+		 * absint() turns a missing or malformed value into 0, so the clamp
+		 * has to start at the default page size rather than 1 - otherwise a
+		 * request that omits per_page silently returns ONE row per page and
+		 * reports a page count of `total`.
+		 */
+		$per = $request->get_param( 'per_page' );
+		$per = ( null === $per || '' === $per ) ? 20 : absint( $per );
+		$per = min( 50, max( 1, $per ) );
 
 		$transactions = Ledger::instance()->list_for_user( $user_id, $per, ( $page - 1 ) * $per );
 		$total        = Ledger::instance()->count_for_user( $user_id );

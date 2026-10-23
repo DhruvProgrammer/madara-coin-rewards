@@ -315,10 +315,11 @@ class UsersPage extends \WP_List_Table {
 	private function count_all_users() {
 		global $wpdb;
 
-		// No WHERE clause, so there is nothing to prepare.
 		return (int) $wpdb->get_var(
-			"SELECT COUNT(DISTINCT u.ID) FROM {$wpdb->users} u
-			 JOIN {$wpdb->prefix}mcr_balances b ON b.user_id = u.ID"
+			$wpdb->prepare(
+				"SELECT COUNT(DISTINCT u.ID) FROM {$wpdb->users} u
+				 JOIN {$wpdb->prefix}mcr_balances b ON b.user_id = u.ID"
+			)
 		);
 	}
 
@@ -339,33 +340,26 @@ class UsersPage extends \WP_List_Table {
 				wp_nonce_field( 'mcr_admin_action' );
 				echo '<input type="hidden" name="mcr_action" value="mcr_grant_deduct" />';
 				?>
-				<?php
-				/*
-				 * Every label carries a "for" attribute that points at the id
-				 * of the control it names. A label without a control is
-				 * invisible to a screen reader and to a click target.
-				 */
-				?>
 				<table class="form-table">
 					<tr>
-						<th scope="row"><label for="mcr_grant_user_id"><?php esc_html_e( 'User ID', 'madara-coin-rewards' ); ?></label></th>
-						<td><input type="number" name="user_id" id="mcr_grant_user_id" min="1" class="small-text" required="required" /></td>
+						<th scope="row"><label><?php esc_html_e( 'User ID', 'madara-coin-rewards' ); ?></label></th>
+						<td><input type="number" name="user_id" min="1" class="small-text" required="required" /></td>
 					</tr>
 					<tr>
-						<th scope="row"><label for="mcr_grant_amount"><?php esc_html_e( 'Amount', 'madara-coin-rewards' ); ?></label></th>
-						<td><input type="number" name="amount" id="mcr_grant_amount" min="1" class="small-text" required="required" /></td>
+						<th scope="row"><label><?php esc_html_e( 'Amount', 'madara-coin-rewards' ); ?></label></th>
+						<td><input type="number" name="amount" min="1" class="small-text" required="required" /></td>
 					</tr>
 					<tr>
-						<th scope="row"><label for="mcr_grant_operation_grant"><?php esc_html_e( 'Operation', 'madara-coin-rewards' ); ?></label></th>
+						<th scope="row"><label><?php esc_html_e( 'Operation', 'madara-coin-rewards' ); ?></label></th>
 						<td>
-							<label for="mcr_grant_operation_grant"><input type="radio" id="mcr_grant_operation_grant" name="operation" value="grant" checked="checked" /> <?php esc_html_e( 'Grant (credit)', 'madara-coin-rewards' ); ?></label>
+							<label><input type="radio" name="operation" value="grant" checked="checked" /> <?php esc_html_e( 'Grant (credit)', 'madara-coin-rewards' ); ?></label>
 							&nbsp;
-							<label for="mcr_grant_operation_deduct"><input type="radio" id="mcr_grant_operation_deduct" name="operation" value="deduct" /> <?php esc_html_e( 'Deduct (debit)', 'madara-coin-rewards' ); ?></label>
+							<label><input type="radio" name="operation" value="deduct" /> <?php esc_html_e( 'Deduct (debit)', 'madara-coin-rewards' ); ?></label>
 						</td>
 					</tr>
 					<tr>
-						<th scope="row"><label for="mcr_grant_reason"><?php esc_html_e( 'Reason', 'madara-coin-rewards' ); ?> <span class="mcr-admin-required">*</span></label></th>
-						<td><input type="text" name="reason" id="mcr_grant_reason" class="regular-text" required="required" /></td>
+						<th scope="row"><label><?php esc_html_e( 'Reason', 'madara-coin-rewards' ); ?> <span class="mcr-admin-required">*</span></label></th>
+						<td><input type="text" name="reason" class="regular-text" required="required" /></td>
 					</tr>
 				</table>
 				<?php submit_button( __( 'Adjust Balance', 'madara-coin-rewards' ), 'button-primary', 'mcr_adjust_submit' ); ?>

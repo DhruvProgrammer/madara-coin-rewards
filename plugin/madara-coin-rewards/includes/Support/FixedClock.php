@@ -90,7 +90,7 @@ class FixedClock implements Clock {
 	 * {@inheritDoc}
 	 */
 	public function seconds_until_next_day() {
-		$next    = $this->fixed_now->modify( '+1 day' )->setTime( 0, 0, 0 );
+		$next    = $this->fixed_now->setTime( 0, 0, 0 )->modify( '+1 day' );
 		$seconds = $next->getTimestamp() - $this->fixed_now->getTimestamp();
 
 		return $seconds > 0 ? (int) $seconds : 0;

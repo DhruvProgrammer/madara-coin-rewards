@@ -97,20 +97,6 @@ class SettingsPage {
 		);
 
 		add_settings_section(
-			'mcr_section_gateways',
-			__( 'Payment Gateways', 'madara-coin-rewards' ),
-			array( $this, 'render_section_gateways' ),
-			self::PAGE_SLUG
-		);
-
-		add_settings_section(
-			'mcr_section_providers',
-			__( 'Ad Providers', 'madara-coin-rewards' ),
-			array( $this, 'render_section_providers' ),
-			self::PAGE_SLUG
-		);
-
-		add_settings_section(
 			'mcr_section_templates',
 			__( 'Templates & Layout', 'madara-coin-rewards' ),
 			array( $this, 'render_section_templates' ),
@@ -136,25 +122,6 @@ class SettingsPage {
 			__( 'Notifications', 'madara-coin-rewards' ),
 			array( $this, 'render_section_notifications' ),
 			self::PAGE_SLUG
-		);
-
-		// --- Payment gateway and ad provider fields ---
-		add_settings_field(
-			'mcr_field_gateways',
-			__( 'Gateways', 'madara-coin-rewards' ),
-			array( $this, 'render_field_gateways' ),
-			self::PAGE_SLUG,
-			'mcr_section_gateways',
-			array( 'label' => __( 'Configure the payment gateways that can be used to buy coins.', 'madara-coin-rewards' ) )
-		);
-
-		add_settings_field(
-			'mcr_field_providers',
-			__( 'Ad networks', 'madara-coin-rewards' ),
-			array( $this, 'render_field_providers' ),
-			self::PAGE_SLUG,
-			'mcr_section_providers',
-			array( 'label' => __( 'Configure the ad networks that reward a verified view with coins.', 'madara-coin-rewards' ) )
 		);
 
 		// --- Daily Check-in fields ---
@@ -232,7 +199,7 @@ class SettingsPage {
 			array(
 				'key'   => 'ads.coins_per_ad',
 				'label' => __( 'Coins awarded for each verified ad view.', 'madara-coin-rewards' ),
-				'min'   => 1,
+				'min'   => 0,
 				'step'  => 1,
 			)
 		);
@@ -326,39 +293,16 @@ class SettingsPage {
 			'wide'    => __( 'Wide', 'madara-coin-rewards' ),
 		);
 
-		/*
-		 * The page names are translated on their own and the capital is
-		 * baked into the string: how a page name is capitalised is a
-		 * locale decision, so the code must never force an English
-		 * capitalisation with ucfirst() on a translated word.
-		 */
-		$page_names = array(
-			'checkin'      => __( 'Checkin', 'madara-coin-rewards' ),
-			'dashboard'    => __( 'Dashboard', 'madara-coin-rewards' ),
-			'ads'          => __( 'Ads', 'madara-coin-rewards' ),
-			'buy_coins'    => __( 'Buy coins', 'madara-coin-rewards' ),
-			'transactions' => __( 'Transactions', 'madara-coin-rewards' ),
-			'balance'      => __( 'Balance', 'madara-coin-rewards' ),
-		);
-
 		foreach ( array( 'checkin', 'dashboard', 'ads', 'buy_coins', 'transactions', 'balance' ) as $page ) {
 			add_settings_field(
 				'mcr_field_template_layout_' . $page,
-				sprintf(
-					/* translators: %s: the name of the coin-rewards page, for example "Dashboard". */
-					__( '%s layout', 'madara-coin-rewards' ),
-					$page_names[ $page ]
-				),
+				__( ucfirst( str_replace( '_', ' ', $page ) ) . ' layout', 'madara-coin-rewards' ),
 				array( $this, 'render_field_select' ),
 				self::PAGE_SLUG,
 				'mcr_section_templates',
 				array(
 					'key'     => 'template.layout_' . $page,
-					'label'   => sprintf(
-						/* translators: %s: the name of the coin-rewards page, for example "Dashboard". */
-						__( 'Template layout for the %s page.', 'madara-coin-rewards' ),
-						$page_names[ $page ]
-					),
+					'label'   => __( 'Template layout for the ' . ucfirst( str_replace( '_', ' ', $page ) ) . ' page.', 'madara-coin-rewards' ),
 					'options' => $layouts,
 				)
 			);
@@ -443,21 +387,13 @@ class SettingsPage {
 		foreach ( array( 'checkin', 'dashboard', 'ads', 'buy_coins', 'transactions' ) as $page ) {
 			add_settings_field(
 				'mcr_field_pages_' . $page,
-				sprintf(
-					/* translators: %s: the name of the coin-rewards page, for example "Dashboard". */
-					__( '%s page ID', 'madara-coin-rewards' ),
-					$page_names[ $page ]
-				),
+				__( ucfirst( str_replace( '_', ' ', $page ) ) . ' page ID', 'madara-coin-rewards' ),
 				array( $this, 'render_field_number' ),
 				self::PAGE_SLUG,
 				'mcr_section_pages',
 				array(
 					'key'   => 'pages.' . $page,
-					'label' => sprintf(
-						/* translators: %s: the name of the coin-rewards page, for example "Dashboard". */
-						__( 'ID of the WordPress page assigned to %s. Enter 0 to use a shortcode.', 'madara-coin-rewards' ),
-						$page_names[ $page ]
-					),
+					'label' => __( 'ID of the WordPress page assigned to ' . ucfirst( str_replace( '_', ' ', $page ) ) . '. Enter 0 to use a shortcode.', 'madara-coin-rewards' ),
 					'min'   => 0,
 					'step'  => 1,
 				)
@@ -694,12 +630,12 @@ class SettingsPage {
 		$rows  = isset( $args['rows'] ) ? absint( $args['rows'] ) : 5;
 
 		/*
-		 * A setting whose value is an array - the streak bonus map, for
-		 * example - is rendered as JSON. Passing an array straight to
-		 * esc_textarea() is a fatal error on PHP 8, because
-		 * htmlspecialchars() does not accept an array.
+		 * A textarea always needs a scalar. Passing an array straight to
+		 * esc_textarea() is a TypeError on PHP 8 - a hard fatal that took
+		 * the whole Settings screen down - so structured values are rendered
+		 * as JSON instead, matching the json field type.
 		 */
-		if ( is_array( $value ) ) {
+		if ( is_array( $value ) || is_object( $value ) ) {
 			$value = wp_json_encode( $value );
 		}
 
@@ -748,240 +684,6 @@ class SettingsPage {
 	 *
 	 * @return void
 	 */
-	/**
-	 * Renders the payment gateway section description.
-	 *
-	 * @return void
-	 */
-	public function render_section_gateways() {
-		echo '<p class="description">' . esc_html__( 'Configure the payment gateways that can be used to buy coins. A secret is encrypted at rest and is never shown back, so leave the field empty to keep the stored value.', 'madara-coin-rewards' ) . '</p>';
-	}
-
-	/**
-	 * Renders the ad provider section description.
-	 *
-	 * @return void
-	 */
-	public function render_section_providers() {
-		echo '<p class="description">' . esc_html__( 'Configure the ad networks that reward a verified view with coins. A secret is encrypted at rest and is never shown back, so leave the field empty to keep the stored value.', 'madara-coin-rewards' ) . '</p>';
-	}
-
-	/**
-	 * Renders the settings of every registered payment gateway.
-	 *
-	 * @return void
-	 */
-	public function render_field_gateways() {
-		$gateways = \MCR\Gateways\Registry::all();
-
-		if ( empty( $gateways ) ) {
-			echo '<p>' . esc_html__( 'No payment gateways are registered.', 'madara-coin-rewards' ) . '</p>';
-
-			return;
-		}
-
-		echo '<table class="form-table" role="presentation"><tbody>';
-
-		foreach ( $gateways as $gateway_id => $gateway ) {
-			if ( ! is_object( $gateway ) || ! method_exists( $gateway, 'get_settings_fields' ) ) {
-				continue;
-			}
-
-			$fields = $gateway->get_settings_fields();
-
-			if ( empty( $fields ) || ! is_array( $fields ) ) {
-				continue;
-			}
-
-			$values = \MCR\Gateways\Gateway::load_settings( $gateway_id );
-
-			echo '<tr><th scope="row">' . esc_html( $this->entity_label( $gateway, 'gateway' ) ) . '</th><td>';
-
-			/*
-			 * The field names have to produce the NESTED shape the
-			 * sanitizer reads. A name like
-			 * mcr_settings[gateways.stripe][secret_key] produces the
-			 * FLAT key "gateways.stripe", which the sanitizer dropped,
-			 * so every value the administrator typed was discarded.
-			 */
-			$this->render_entity_fields( 'gateways', $gateway_id, $fields, is_array( $values ) ? $values : array() );
-
-			echo '</td></tr>';
-		}
-
-		echo '</tbody></table>';
-	}
-
-	/**
-	 * Renders the settings of every registered ad provider.
-	 *
-	 * @return void
-	 */
-	public function render_field_providers() {
-		$providers = \MCR\AdProviders\Registry::all();
-
-		if ( empty( $providers ) ) {
-			echo '<p>' . esc_html__( 'No ad providers are registered.', 'madara-coin-rewards' ) . '</p>';
-
-			return;
-		}
-
-		echo '<table class="form-table" role="presentation"><tbody>';
-
-		foreach ( $providers as $provider_id => $provider ) {
-			if ( ! is_object( $provider ) || ! method_exists( $provider, 'get_settings_fields' ) ) {
-				continue;
-			}
-
-			$fields = $provider->get_settings_fields();
-
-			if ( empty( $fields ) || ! is_array( $fields ) ) {
-				continue;
-			}
-
-			$values = \MCR\AdProviders\Provider::load_settings( $provider_id );
-
-			echo '<tr><th scope="row">' . esc_html( $this->entity_label( $provider, 'provider' ) ) . '</th><td>';
-
-			$this->render_entity_fields( 'ads.providers', $provider_id, $fields, is_array( $values ) ? $values : array() );
-
-			echo '</td></tr>';
-		}
-
-		echo '</tbody></table>';
-	}
-
-	/**
-	 * Renders the fields of one gateway or provider.
-	 *
-	 * @param string $group     The settings group, e.g. "gateways".
-	 * @param string $entity_id The gateway or provider id.
-	 * @param array  $fields    The field definitions.
-	 * @param array  $values    The values that are already stored.
-	 * @return void
-	 */
-	private function render_entity_fields( $group, $entity_id, array $fields, array $values ) {
-		$prefix = $group . '.' . $entity_id;
-		$seen = array();
-
-		foreach ( $fields as $field ) {
-			if ( ! is_array( $field ) ) {
-				continue;
-			}
-
-			$id = isset( $field['id'] ) ? sanitize_key( (string) $field['id'] ) : '';
-
-			if ( '' === $id || isset( $seen[ $id ] ) ) {
-				continue;
-			}
-
-			$seen[ $id ] = true;
-
-			$type = isset( $field['type'] ) ? (string) $field['type'] : 'text';
-			/*
-			 * The flat name produces the flat dotted key
-			 * "gateways.stripe", which the sanitizer accepts.
-			 */
-			$name = 'mcr_settings[' . $prefix . '][' . $id . ']';
-			$dom  = 'mcr-' . sanitize_html_class( str_replace( '.', '-', $prefix . '-' . $id ) );
-
-			$label = isset( $field['label'] ) ? (string) $field['label'] : $id;
-
-			/*
-			 * A secret is never rendered back. The field is left empty
-			 * and an empty submission keeps the stored value.
-			 */
-			$is_secret = ( 'password' === $type );
-
-			if ( $is_secret ) {
-				$value = '';
-			} elseif ( isset( $values[ $id ] ) && is_scalar( $values[ $id ] ) ) {
-				$value = (string) $values[ $id ];
-			} elseif ( isset( $field['default'] ) && is_scalar( $field['default'] ) ) {
-				$value = (string) $field['default'];
-			} else {
-				$value = '';
-			}
-
-			echo '<p><label for="' . esc_attr( $dom ) . '"><strong>' . esc_html( $label ) . '</strong></label><br />';
-
-			switch ( $type ) {
-				case 'toggle':
-					// The hidden field has to come first, so an unchecked
-					// box still submits a value.
-					echo '<input type="hidden" name="' . esc_attr( $name ) . '" value="off" />';
-					echo '<input type="checkbox" id="' . esc_attr( $dom ) . '" name="' . esc_attr( $name ) . '" value="on"' . checked( 'on', $value, false ) . ' />';
-					break;
-
-				case 'select':
-					echo '<select id="' . esc_attr( $dom ) . '" name="' . esc_attr( $name ) . '">';
-
-					if ( isset( $field['options'] ) && is_array( $field['options'] ) ) {
-						foreach ( $field['options'] as $option_value => $option_label ) {
-							echo '<option value="' . esc_attr( (string) $option_value ) . '"' . selected( (string) $option_value, $value, false ) . '>' . esc_html( (string) $option_label ) . '</option>';
-						}
-					}
-
-					echo '</select>';
-					break;
-
-				case 'textarea':
-					echo '<textarea id="' . esc_attr( $dom ) . '" name="' . esc_attr( $name ) . '" rows="4" class="large-text code">' . esc_textarea( $value ) . '</textarea>';
-					break;
-
-				case 'number':
-					echo '<input type="number" id="' . esc_attr( $dom ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $value ) . '" class="small-text" />';
-					break;
-
-				case 'url':
-					echo '<input type="url" id="' . esc_attr( $dom ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $value ) . '" class="regular-text" />';
-					break;
-
-				case 'password':
-					echo '<input type="password" id="' . esc_attr( $dom ) . '" name="' . esc_attr( $name ) . '" value="" class="regular-text" autocomplete="new-password" />';
-
-					if ( isset( $values[ $id ] ) && '' !== (string) $values[ $id ] ) {
-						echo '<p class="description">' . esc_html__( 'A secret is stored. Leave this field empty to keep it.', 'madara-coin-rewards' ) . '</p>';
-					}
-					break;
-
-				default:
-					echo '<input type="text" id="' . esc_attr( $dom ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $value ) . '" class="regular-text" />';
-					break;
-			}
-
-			if ( ! empty( $field['description'] ) ) {
-				echo '<p class="description">' . esc_html( (string) $field['description'] ) . '</p>';
-			}
-
-			echo '</p>';
-		}
-	}
-
-	/**
-	 * Returns a human readable label for a gateway or a provider.
-	 *
-	 * @param object $entity The gateway or the provider.
-	 * @param string $kind   "gateway" or "provider".
-	 * @return string
-	 */
-	private function entity_label( $entity, $kind = 'gateway' ) {
-		$known = array(
-			'stripe'      => __( 'Stripe', 'madara-coin-rewards' ),
-			'woocommerce' => __( 'WooCommerce', 'madara-coin-rewards' ),
-			'manual'      => __( 'Manual', 'madara-coin-rewards' ),
-			'generic_s2s' => __( 'Generic server-to-server', 'madara-coin-rewards' ),
-		);
-
-		$id = method_exists( $entity, 'get_id' ) ? (string) $entity->get_id() : '';
-
-		if ( '' !== $id && isset( $known[ $id ] ) ) {
-			return $known[ $id ];
-		}
-
-		return ucfirst( str_replace( array( '_', '-' ), ' ', $id ) );
-	}
-
 	private function render_notices() {
 		$notice = get_transient( 'mcr_admin_notice' );
 		if ( $notice ) {

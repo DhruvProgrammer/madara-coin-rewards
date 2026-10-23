@@ -28,6 +28,11 @@ class Assets {
 	const STYLE = 'mcr-design-system';
 
 	/**
+	 * Storefront stylesheet handle.
+	 */
+	const BUY_STYLE = 'mcr-buy-coins';
+
+	/**
 	 * Frontend script handle.
 	 */
 	const SCRIPT = 'mcr-frontend';
@@ -93,12 +98,6 @@ class Assets {
 		$this->registered = true;
 
 		add_action( 'wp_enqueue_scripts', array( $this, 'maybe_enqueue' ), 20 );
-
-		/*
-		 * The admin screens have their own stylesheet. It was never
-		 * enqueued, so the plugin's admin pages were unstyled.
-		 */
-		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ), 20 );
 	}
 
 	/**
@@ -142,44 +141,7 @@ class Assets {
 			$this->layout = '' !== $layout ? sanitize_key( $layout ) : Templates::layout( $slug );
 		}
 
-		/*
-		 * The render path runs after wp_head, so enqueuing here would be
-		 * too late for WordPress to print the stylesheet. Defer the work
-		 * to the footer, where it is still printed, and guard against
-		 * double-enqueuing.
-		 */
-		if ( did_action( 'wp_head' ) ) {
-			add_action( 'wp_footer', array( $this, 'enqueue' ), 1 );
-		}
-	}
-
-	/**
-	 * Enqueues the stylesheet the admin screens need.
-	 *
-	 * @return void
-	 */
-	public function enqueue_admin_assets() {
-		if ( ! defined( 'MCR_PLUGIN_URL' ) || ! defined( 'MCR_VERSION' ) ) {
-			return;
-		}
-
-		/*
-		 * The stylesheet is only loaded on the plugin's own screens.
-		 * Loading it everywhere would put the plugin's rules in front
-		 * of the rest of the admin.
-		 */
-		if ( ! \MCR\Admin\Admin::is_plugin_screen() ) {
-			return;
-		}
-
-		if ( ! wp_style_is( 'mcr-admin', 'enqueued' ) && ! wp_style_is( 'mcr-admin', 'done' ) ) {
-			wp_enqueue_style(
-				'mcr-admin',
-				MCR_PLUGIN_URL . 'assets/css/mcr-admin.css',
-				array(),
-				MCR_VERSION
-			);
-		}
+		$this->enqueue();
 	}
 
 	/**
@@ -202,14 +164,15 @@ class Assets {
 		}
 
 		/*
-		 * The rewards interface: the wallet header, the claim card, the
-		 * ad panel and the reward calendar. It depends on the design
-		 * system's variables, so it is loaded after it.
+		 * The premium storefront stylesheet only loads on the Buy Coins
+		 * page, so none of these rules can ever reach another page.
 		 */
-		if ( ! wp_style_is( 'mcr-rewards', 'enqueued' ) && ! wp_style_is( 'mcr-rewards', 'done' ) ) {
+		if ( 'buy-coins' === $this->page
+			&& ! wp_style_is( self::BUY_STYLE, 'enqueued' )
+			&& ! wp_style_is( self::BUY_STYLE, 'done' ) ) {
 			wp_enqueue_style(
-				'mcr-rewards',
-				MCR_PLUGIN_URL . 'assets/css/mcr-rewards.css',
+				self::BUY_STYLE,
+				MCR_PLUGIN_URL . 'assets/css/mcr-buy-coins.css',
 				array( self::STYLE ),
 				MCR_VERSION
 			);
@@ -312,18 +275,8 @@ class Assets {
 			return false;
 		}
 
-		/*
-		 * The balance widget can sit in the sidebar of ANY page, so it is
-		 * checked first. It used to be checked only on non-singular
-		 * requests, which left the widget unstyled on every chapter and
-		 * every post.
-		 */
-		if ( $this->has_balance_widget() ) {
-			return true;
-		}
-
 		if ( ! is_singular() ) {
-			return false;
+			return $this->has_balance_widget();
 		}
 
 		$post = get_post();

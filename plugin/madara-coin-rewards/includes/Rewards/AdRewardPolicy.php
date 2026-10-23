@@ -235,7 +235,7 @@ class AdRewardPolicy {
 			);
 		}
 
-		if ( (int) ( $session['user_id'] ?? 0 ) !== $user_id ) {
+		if ( (int) $session['user_id'] !== $user_id ) {
 			return new \WP_Error(
 				'mcr_session_mismatch',
 				__( 'The ad session does not belong to this account.', 'madara-coin-rewards' ),
@@ -243,13 +243,7 @@ class AdRewardPolicy {
 			);
 		}
 
-		/*
-		 * Both terminal states mean the ad was watched and paid for:
-		 * "verified" is the client-verification path and "credited" is
-		 * the server-to-server path. Either of them means the reward has
-		 * already been claimed.
-		 */
-		if ( in_array( $session['status'] ?? '', array( 'verified', 'credited' ), true ) ) {
+		if ( 'verified' === $session['status'] ) {
 			return new \WP_Error(
 				'mcr_already_verified',
 				__( 'This ad reward has already been claimed.', 'madara-coin-rewards' ),
@@ -257,7 +251,7 @@ class AdRewardPolicy {
 			);
 		}
 
-		if ( 'pending' !== ( $session['status'] ?? '' ) ) {
+		if ( 'pending' !== $session['status'] ) {
 			return new WP_Error(
 				'mcr_session_invalid',
 				__( 'The ad session is no longer valid.', 'madara-coin-rewards' ),
@@ -265,19 +259,9 @@ class AdRewardPolicy {
 			);
 		}
 
-		$expires_at = isset( $session['expires_at'] ) ? (string) $session['expires_at'] : '';
-		$expires    = 0;
+		$expires = strtotime( $session['expires_at'] . ' UTC' );
 
-		if ( '' !== $expires_at ) {
-			try {
-				$dt = new \DateTimeImmutable( $expires_at, new \DateTimeZone( 'UTC' ) );
-				$expires = $dt->getTimestamp();
-			} catch ( \Throwable $e ) {
-				$expires = 0;
-			}
-		}
-
-		if ( ! $expires || $expires < $this->clock->now()->getTimestamp() ) {
+		if ( $expires && $expires < $this->clock->now()->getTimestamp() ) {
 			return new WP_Error(
 				'mcr_session_expired',
 				__( 'The ad session has expired. Please watch the ad again.', 'madara-coin-rewards' ),

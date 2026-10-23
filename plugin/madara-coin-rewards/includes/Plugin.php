@@ -82,8 +82,12 @@ class Plugin {
 		// The theme bridge lets the plugin adopt the site's accent colour.
 		add_action( 'wp_head', array( Integrations\Madara::class, 'print_theme_bridge' ), 20 );
 
-		// The rewards pages run without the theme's sidebar.
-		Integrations\FullWidth::register();
+		// Full-width, no-sidebar layout for the plugin's storefront page.
+		Integrations\Madara::register_layout_hooks();
+
+		// Serve the storefront at /premium, keeping the old URL working.
+		add_action( 'init', array( Pages::class, 'maybe_migrate_slugs' ), 20 );
+		add_action( 'init', array( Pages::class, 'register_slug_redirect' ), 21 );
 
 		// User profile panel.
 		add_action( 'show_user_profile', array( Integrations\Profile::class, 'render_profile_panel' ) );
@@ -97,6 +101,9 @@ class Plugin {
 
 		// Admin screens.
 		if ( is_admin() ) {
+			// Admin::init() is the entry point; there is no static
+			// register(). Calling a missing method fataled on every
+			// is_admin() request, so /wp-admin/profile.php 500'd sitewide.
 			Admin\Admin::init();
 		}
 

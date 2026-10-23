@@ -142,212 +142,6 @@ class WP_Widget {
 }
 
 /**
- * dbDelta stub: records the schema statements.
- *
- * @param array|string $queries Queries.
- * @return array
- */
-function dbDelta( $queries ) {
-$queries = (array) $queries;
-
-foreach ( $queries as $query ) {
-if ( is_string( $query ) && false !== stripos( $query, 'CREATE TABLE' ) ) {
-$GLOBALS['mcr_dbdelta'][] = $query;
-}
-}
-
-return array();
-}
-/**
- * Render the settings fields for a page.
- *
- * @return void
- */
-function do_settings_fields( $page = '' ) {}
-
-/**
- * The WordPress list table base class.
- *
- * Only the members the plugin's table uses are implemented.
- */
-class WP_List_Table {
-
-	/**
-	 * Column headers.
-	 *
-	 * @var array
-	 */
-	public $_column_headers = array();
-
-	/**
-	 * Items.
-	 *
-	 * @var array
-	 */
-	public $_items = array();
-
-	/**
-	 * Total items.
-	 *
-	 * @var int
-	 */
-	protected $_total_items = 0;
-
-	/**
-	 * Per page.
-	 *
-	 * @var int
-	 */
-	protected $_per_page = 20;
-
-	/**
-	 * Constructor.
-	 *
-	 * @param array $args Arguments.
-	 */
-	public function __construct( $args = array() ) {
-		if ( isset( $args['singular'] ) ) {
-			$this->singular = $args['singular'];
-		}
-
-		if ( isset( $args['plural'] ) ) {
-			$this->plural = $args['plural'];
-		}
-
-		if ( isset( $args['ajax'] ) ) {
-			$this->ajax = (bool) $args['ajax'];
-		}
-	}
-
-	/**
-	 * The singular label.
-	 *
-	 * @var string
-	 */
-	public $singular = '';
-
-	/**
-	 * The plural label.
-	 *
-	 * @var string
-	 */
-	public $plural = '';
-
-	/**
-	 * Whether the table uses AJAX.
-	 *
-	 * @var bool
-	 */
-	public $ajax = false;
-
-	/**
-	 * Sets the pagination arguments.
-	 *
-	 * @param array $args Arguments.
-	 * @return void
-	 */
-	public function set_pagination_args( $args ) {
-		if ( isset( $args['total_items'] ) ) {
-			$this->_total_items = (int) $args['total_items'];
-		}
-
-		if ( isset( $args['per_page'] ) ) {
-			$this->_per_page = (int) $args['per_page'];
-		}
-	}
-
-	/**
-	 * The current page number.
-	 *
-	 * @return int
-	 */
-	public function get_pagenum() {
-		$paged = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1;
-
-		return max( 1, $paged );
-	}
-
-	/**
-	 * The total number of items.
-	 *
-	 * @return int
-	 */
-	public function get_total_items() {
-		return $this->_total_items;
-	}
-
-	/**
-	 * The columns.
-	 *
-	 * @return array
-	 */
-	public function get_columns() {
-		return array();
-	}
-
-	/**
-	 * The sortable columns.
-	 *
-	 * @return array
-	 */
-	public function get_sortable_columns() {
-		return array();
-	}
-
-	/**
-	 * Prepares the items.
-	 *
-	 * @return void
-	 */
-	public function prepare_items() {}
-
-	/**
-	 * The default column renderer.
-	 *
-	 * @param array  $item    Item.
-	 * @param string $column_name Column.
-	 * @return string
-	 */
-	public function column_default( $item, $column_name ) {
-		return isset( $item[ $column_name ] ) ? esc_html( $item[ $column_name ] ) : '';
-	}
-
-	/**
-	 * Renders the table.
-	 *
-	 * @return void
-	 */
-	public function display() {
-		echo '<table class="wp-list-table widefat fixed striped"><tbody>';
-
-		foreach ( (array) $this->_items as $item ) {
-			$this->single_row( $item );
-		}
-
-		echo '</tbody></table>';
-	}
-
-	/**
-	 * Renders one row.
-	 *
-	 * @param array $item Item.
-	 * @return void
-	 */
-	public function single_row( $item ) {
-		echo '<tr><td>' . $this->column_default( $item, 'id' ) . '</td></tr>';
-	}
-
-	/**
-	 * The "no items" message.
-	 *
-	 * @return void
-	 */
-	public function no_items() {
-		echo '<tr><td colspan="10">No items found.</td></tr>';
-	}
-}
-
-/**
  * Plugin directory helper.
  *
  * @param string $file File.
@@ -581,8 +375,7 @@ function is_feed() {
  * @return bool
  */
 function is_admin() {
-	// A test can flip this to exercise the admin-only code paths.
-	return ! empty( $GLOBALS['mcr_is_admin'] );
+	return false;
 }
 
 /**
@@ -680,8 +473,6 @@ function update_site_option( $option, $value ) {
  * @return string
  */
 function add_menu_page() {
-	$GLOBALS['mcr_menu_pages'][] = func_get_args();
-
 	return 'mcr-dashboard';
 }
 
@@ -691,8 +482,6 @@ function add_menu_page() {
  * @return string
  */
 function add_submenu_page() {
-	$GLOBALS['mcr_menu_pages'][] = func_get_args();
-
 	return '';
 }
 
@@ -702,17 +491,7 @@ function add_submenu_page() {
  * @return null
  */
 function get_current_screen() {
-	/*
-	 * A test can set the current screen's id to exercise the code that
-	 * has to know which screen it is on.
-	 */
-	if ( empty( $GLOBALS['mcr_screen_id'] ) ) {
-		return null;
-	}
-
-	return (object) array(
-		'id' => (string) $GLOBALS['mcr_screen_id'],
-	);
+	return null;
 }
 
 /**
@@ -777,16 +556,51 @@ function wp_register_script( $handle, $src = '', $deps = array(), $ver = false, 
  * Is a script registered.
  *
  * @return bool
+ */
+function wp_script_is( $handle, $list = 'enqueued' ) {
+	return false;
+}
 
 /**
  * Localize a script.
  *
  * @return bool
+ */
+function wp_localize_script( $handle, $object_name, $l10n ) {
+	return true;
+}
 
 /**
  * Enqueue a script.
  *
  * @return void
+ */
+function wp_enqueue_script() {}
+
+/**
+ * Enqueue a style.
+ *
+ * @return void
+ */
+function wp_enqueue_style() {}
+
+/**
+ * Register a widget.
+ *
+ * @param string $class Class name.
+ * @return void
+ */
+function register_widget( $class ) {}
+
+/**
+ * Login URL.
+ *
+ * @param string $redirect Redirect.
+ * @return string
+ */
+function wp_login_url( $redirect = '' ) {
+	return 'https://example.test/wp-login.php';
+}
 
 /**
  * Register a REST route.
@@ -794,6 +608,16 @@ function wp_register_script( $handle, $src = '', $deps = array(), $ver = false, 
  * @return void
  */
 function register_rest_route() {}
+
+/**
+ * Did an action fire.
+ *
+ * @param string $tag Hook name.
+ * @return int
+ */
+function did_action( $tag ) {
+	return 1;
+}
 
 /**
  * Safe redirect.
@@ -886,22 +710,12 @@ class MCR_Fake_WPDB {
 	 * @return string
 	 */
 	public function prepare( $sql, ...$args ) {
-		/*
-		 * WordPress accepts EITHER variadic arguments or a single array of
-		 * arguments. The plugin uses the array form, so it must be supported
-		 * exactly as WordPress does.
-		 */
-		if ( 1 === count( $args ) && is_array( $args[0] ) ) {
-			$args = $args[0];
-		}
-
 		if ( empty( $args ) ) {
 			return $sql;
 		}
 
-		$sql = str_replace( array( '%d', '%f' ), '%s', $sql );
-
-		$values = array();
+		$sql     = str_replace( array( '%d', '%f' ), '%s', $sql );
+		$values  = array();
 
 		foreach ( $args as $arg ) {
 			if ( is_int( $arg ) || is_float( $arg ) ) {

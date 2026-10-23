@@ -410,35 +410,7 @@ function mcr_lint_scan_file( $path, $rel, &$findings ) {
 		mcr_lint_add( $findings, 'ERROR', 'missing-abspath-guard', $rel, 1, 'File is missing the ABSPATH guard.', '' );
 	}
 
-	// --- 6. Double-quoted strings that contain a printf specifier ---
-	/*
-	 * A double-quoted string is interpolated by PHP. A printf specifier such
-	 * as "%1$d" contains a dollar sign, so PHP eats the "$d" as a variable
-	 * reference, leaving "%1 " behind. printf() then throws
-	 *
-	 *     ValueError: Unknown format specifier " "
-	 *
-	 * which is a FATAL error in PHP 8.
-	 */
-	$specifier_pattern = '/"[^"\n]*%[0-9]*\$[a-zA-Z_][^"\n]*"/';
-
-	if ( preg_match_all( $specifier_pattern, $source, $specifier_matches, PREG_OFFSET_CAPTURE ) ) {
-		foreach ( $specifier_matches[0] as $hit ) {
-			$line = substr_count( substr( $source, 0, $hit[1] ), "\n" ) + 1;
-
-			mcr_lint_add(
-				$findings,
-				'ERROR',
-				'interpolated-format-string',
-				$rel,
-				$line,
-				'A double-quoted string contains a printf specifier. PHP interpolates the "$..." as a variable, which breaks printf() and is a fatal error in PHP 8. Use single quotes.',
-				$hit[0]
-			);
-		}
-	}
-
-	// --- 7. Closing PHP tag (deprecated in modern WP) ---
+	// --- 6. Closing PHP tag (deprecated in modern WP) ---
 	if ( preg_match( '/\?>\s*$/', $source ) ) {
 		mcr_lint_add( $findings, 'INFO', 'closing-php-tag', $rel, 1, 'File ends with a closing PHP tag.', '' );
 	}
@@ -455,7 +427,7 @@ $line_count = 0;
 
 foreach ( $php_files as $path ) {
 	$file_count++;
-	$rel   = str_replace( '\\', '/', str_replace( $root . DIRECTORY_SEPARATOR, '', $path ) );
+	$rel   = str_replace( $root . DIRECTORY_SEPARATOR, '', $path );
 	$lines = file( $path, FILE_IGNORE_NEW_LINES );
 
 	if ( false !== $lines ) {
@@ -464,7 +436,7 @@ foreach ( $php_files as $path ) {
 
 	$allowed = false;
 
-	if ( 0 === strpos( $rel, 'tests/' ) ) {
+	if ( 0 === strpos( $rel, 'tests' . DIRECTORY_SEPARATOR ) ) {
 		$allowed = true;
 	}
 

@@ -27,13 +27,6 @@ class CheckIn {
 	private static $instance = null;
 
 	/**
-	 * Per-request memoisation of status() results.
-	 *
-	 * @var array
-	 */
-	private $status_cache = array();
-
-	/**
 	 * Returns the shared instance.
 	 *
 	 * @return CheckIn
@@ -56,11 +49,6 @@ class CheckIn {
 		global $wpdb;
 
 		$user_id = absint( $user_id );
-
-		if ( isset( $this->status_cache[ $user_id ] ) ) {
-			return $this->status_cache[ $user_id ];
-		}
-
 		$clock   = Container::instance()->clock();
 		$today   = $clock->today_key();
 
@@ -80,8 +68,6 @@ class CheckIn {
 		);
 
 		if ( ! $user_id ) {
-			$this->status_cache[ $user_id ] = $defaults;
-
 			return $defaults;
 		}
 
@@ -104,14 +90,8 @@ class CheckIn {
 			$defaults['total_amount']  = (int) $today_row->total_amount;
 		} else {
 			$defaults['streak']         = $this->current_streak( $user_id );
-			/*
-			 * current_streak() already counts today as the first day of
-			 * the streak the user would have, so the bonus is computed
-			 * from it directly. Adding one here advertised the next
-			 * tier's bonus and promised more than the claim pays.
-			 */
 			$defaults['bonus_amount']   = StreakCalculator::calculateBonus(
-				$defaults['streak'],
+				$defaults['streak'] + 1,
 				Settings::get( 'checkin.bonuses', array() ),
 				(int) Settings::get( 'checkin.max_bonus', 0 )
 			);
@@ -121,18 +101,7 @@ class CheckIn {
 		$defaults['base_claimable'] = $defaults['total_amount'] > 0;
 		$defaults['calendar']       = $this->calendar( $user_id );
 
-		$this->status_cache[ $user_id ] = $defaults;
-
 		return $defaults;
-	}
-
-	/**
-	 * Clears the per-request status cache.
-	 *
-	 * @return void
-	 */
-	public function reset_status_cache() {
-		$this->status_cache = array();
 	}
 
 	/**
@@ -145,7 +114,6 @@ class CheckIn {
 		global $wpdb;
 
 		$user_id = absint( $user_id );
-
 		$clock   = Container::instance()->clock();
 
 		$table = $wpdb->prefix . 'mcr_checkins';
@@ -171,7 +139,6 @@ class CheckIn {
 		global $wpdb;
 
 		$user_id = absint( $user_id );
-
 		$days    = max( 7, min( 120, absint( $days ) ) );
 		$clock   = Container::instance()->clock();
 
@@ -222,24 +189,6 @@ class CheckIn {
 		global $wpdb;
 
 		$user_id = absint( $user_id );
-
-		/*
-		 * The rate limit the settings screen offers is applied here. It
-		 * used to be stored and displayed but never read, so a client
-		 * could hammer the endpoint.
-		 */
-		if ( ! \MCR\Support\RateLimiter::allow(
-			'checkin',
-			$user_id,
-			(int) Settings::get( 'security.rate_limit_checkin', 10 )
-		) ) {
-			return new \WP_Error(
-				'mcr_rate_limited',
-				__( 'You are checking in too quickly. Please wait a moment and try again.', 'madara-coin-rewards' ),
-				array( 'status' => 429 )
-			);
-		}
-
 
 		if ( ! $user_id ) {
 			return new \WP_Error( 'mcr_not_logged_in', __( 'Please log in to claim your daily reward.', 'madara-coin-rewards' ) );
@@ -342,33 +291,20 @@ class CheckIn {
 		 * removed again so the user can retry - the alternative is coins
 		 * paid for a day that was never recorded.
 		 */
-		$result = $policy->grant(
-			$user_id,
-			$evaluation,
-			array(
-				// The claim record's id scopes the idempotency keys to this
-				// attempt, so a retry after a failed grant is not blocked
-				// by the failed attempt's key.
-				'attempt' => $checkin_id,
-			)
-		);
+		$result = $policy->grant( $user_id, $evaluation );
 
 		if ( is_wp_error( $result ) ) {
 			$data = $result->get_error_data();
 			$data = is_array( $data ) ? $data : array();
 
 			/*
-			 * The record is removed whenever NOTHING was paid, so the day
-			 * is not locked and the user can try again. That covers a
-			 * failed base credit and a bonus whose reversal worked.
-			 *
-			 * When the reversal itself failed the base coins are still in
-			 * the account: the record is kept, because the day WAS paid
-			 * for, and letting the user claim it again would pay twice.
+			 * When the base reward was reversed the day was NOT claimed,
+			 * so the record is removed and the user can try again. When the
+			 * reversal itself failed the base coins are still in the
+			 * account: the record is kept, because the day WAS paid for,
+			 * and letting the user claim it again would pay twice.
 			 */
-			$granted = isset( $data['granted'] ) ? (int) $data['granted'] : ( ! empty( $data['reversed'] ) ? 0 : 0 );
-
-			if ( $granted <= 0 ) {
+			if ( ! empty( $data['reversed'] ) ) {
 				$wpdb->query(
 					$wpdb->prepare(
 						"DELETE FROM {$table} WHERE id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -378,8 +314,7 @@ class CheckIn {
 			} else {
 				$wpdb->query(
 					$wpdb->prepare(
-						"UPDATE {$table} SET bonus_amount = 0, total_amount = %d WHERE id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-						$granted,
+						"UPDATE {$table} SET bonus_amount = 0, total_amount = base_amount WHERE id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 						$checkin_id
 					)
 				);

@@ -50,7 +50,7 @@ class Settings {
 			'checkin.streak_enabled'           => 'on',
 			'checkin.timezone_source'          => 'site',
 			'checkin.require_login'            => 'on',
-			'checkin.success_message'          => self::text( 'Daily reward claimed! Come back tomorrow to keep your streak.' ),
+			'checkin.success_message'          => __( 'Daily reward claimed! Come back tomorrow to keep your streak.', 'madara-coin-rewards' ),
 
 			// Ad rewards.
 			'ads.coins_per_ad'                 => 5,
@@ -68,7 +68,7 @@ class Settings {
 			'purchase.order_expiry_minutes'    => 60,
 			'purchase.gateway'                 => 'manual',
 			'purchase.auto_credit'             => 'on',
-			'purchase.success_message'         => self::text( 'Your coins have been added to your account.' ),
+			'purchase.success_message'         => __( 'Your coins have been added to your account.', 'madara-coin-rewards' ),
 
 			// Packages.
 			'packages'                         => array(),
@@ -102,11 +102,6 @@ class Settings {
 			// Notifications.
 			'notify.toast_on_change'           => 'on',
 			'notify.show_login_prompt'         => 'on',
-
-			// Uninstall. The opt-in has to be a KNOWN setting, or the
-			// sanitiser drops it and the uninstall handler can never
-			// purge anything.
-			'uninstall.purge_data'             => 'off',
 		);
 
 		/**
@@ -115,49 +110,6 @@ class Settings {
 		 * @param array $defaults Default settings.
 		 */
 		return apply_filters( 'mcr_default_settings', $defaults );
-	}
-
-	/**
-	 * The catalogue of strings the settings registry ships with.
-	 *
-	 * The defaults are built while the plugin boots, which is BEFORE the
-	 * init action, so the text domain is not loaded yet. Calling a
-	 * translation function at that point makes WordPress raise
-	 * "_load_textdomain_just_in_time was called incorrectly" on every
-	 * request, and the string is never translated.
-	 *
-	 * Every entry carries a literal message id, so a translator is able to
-	 * match it: a computed message id can never be translated.
-	 *
-	 * @return array Map of source string to translated string.
-	 */
-	private static function strings() {
-		return array(
-			'Daily reward claimed! Come back tomorrow to keep your streak.' => __( 'Daily reward claimed! Come back tomorrow to keep your streak.', 'madara-coin-rewards' ),
-			'Your coins have been added to your account.'                   => __( 'Your coins have been added to your account.', 'madara-coin-rewards' ),
-		);
-	}
-
-	/**
-	 * Translates a default string.
-	 *
-	 * The defaults are built while the plugin boots, which is BEFORE the
-	 * init action, so the text domain is not loaded yet. Calling a
-	 * translation function at that point makes WordPress raise
-	 * "_load_textdomain_just_in_time was called incorrectly" on every
-	 * request, and the string is never translated.
-	 *
-	 * @param string $source The source string.
-	 * @return string The translated string, or the source when unknown.
-	 */
-	private static function text( $source ) {
-		if ( function_exists( 'did_action' ) && did_action( 'init' ) ) {
-			$strings = self::strings();
-
-			return isset( $strings[ $source ] ) ? $strings[ $source ] : $source;
-		}
-
-		return $source;
 	}
 
 	/**
@@ -208,6 +160,25 @@ class Settings {
 		$value = self::get( $key, 'off' );
 
 		if ( true === $value || 'on' === $value || 1 === $value || '1' === $value ) {
+			return 'on';
+		}
+
+		return 'off';
+	}
+
+	/**
+	 * Normalizes a raw checkbox-style value to the on/off toggle convention.
+	 *
+	 * The explicit `'off'` string (and falsey values) mean off. Using
+	 * `! empty()` here turned the string "off" into "on", because a
+	 * non-empty string is truthy - so a package could never be switched off
+	 * through update().
+	 *
+	 * @param mixed $value Raw value.
+	 * @return string 'on' or 'off'.
+	 */
+	public static function to_toggle( $value ) {
+		if ( true === $value || 1 === $value || '1' === $value || 'on' === $value || 'yes' === $value ) {
 			return 'on';
 		}
 
@@ -283,20 +254,7 @@ class Settings {
 	public static function sanitize( $input ) {
 		$input    = is_array( $input ) ? $input : array();
 		$defaults = self::defaults();
-
-		/*
-		 * The array starts from the STORED value, not from the defaults.
-		 *
-		 * The gateway and the ad provider credentials live under keys
-		 * that are not part of the defaults, because they only exist once
-		 * something has been configured. Building the sanitised array from
-		 * the defaults alone silently deleted every one of them the first
-		 * time the settings form was saved.
-		 */
-		$stored = get_option( self::OPTION, array() );
-		$stored = is_array( $stored ) ? $stored : array();
-
-		$clean = $stored;
+		$clean    = array();
 
 		foreach ( $defaults as $key => $default ) {
 			if ( ! array_key_exists( $key, $input ) ) {
@@ -304,94 +262,6 @@ class Settings {
 			}
 
 			$clean[ $key ] = self::sanitizeValue( $key, $input[ $key ], $default );
-		}
-
-		/*
-		 * The gateway and the provider settings arrive in one of two
-		 * shapes, and BOTH are accepted:
-		 *
-		 *   the flat dotted key, which is what the field name
-		 *   "mcr_settings[gateways.stripe][secret_key]" produces:
-		 *
-		 *     array( 'gateways.stripe' => array( 'secret_key' => $value ) )
-		 *
-		 *   and the nested shape:
-		 *
-		 *     array( 'gateways' => array( 'stripe' => array( ... ) ) )
-		 *
-		 * Accepting only one of them meant that whichever shape the
-		 * form did not produce was silently discarded.
-		 */
-		$gateways = array();
-
-		if ( isset( $input['gateways'] ) && is_array( $input['gateways'] ) ) {
-			foreach ( $input['gateways'] as $gateway_id => $values ) {
-				if ( is_array( $values ) ) {
-					$gateways[ (string) $gateway_id ] = $values;
-				}
-			}
-		}
-
-		foreach ( $input as $key => $values ) {
-			if ( ! is_string( $key ) || 0 !== strpos( $key, 'gateways.' ) || ! is_array( $values ) ) {
-				continue;
-			}
-
-			$gateway_id = substr( $key, strlen( 'gateways.' ) );
-
-			if ( ! isset( $gateways[ $gateway_id ] ) ) {
-				$gateways[ $gateway_id ] = $values;
-			}
-		}
-
-		foreach ( $gateways as $gateway_id => $values ) {
-			$gateway_id = sanitize_key( (string) $gateway_id );
-
-			if ( '' === $gateway_id ) {
-				continue;
-			}
-
-			$key = 'gateways.' . $gateway_id;
-
-			$existing = isset( $clean[ $key ] ) && is_array( $clean[ $key ] ) ? $clean[ $key ] : array();
-
-			$clean[ $key ] = \MCR\Gateways\Gateway::sanitize_settings( $gateway_id, $values, $existing );
-		}
-
-		$providers = array();
-
-		if ( isset( $input['ads.providers'] ) && is_array( $input['ads.providers'] ) ) {
-			foreach ( $input['ads.providers'] as $provider_id => $values ) {
-				if ( is_array( $values ) ) {
-					$providers[ (string) $provider_id ] = $values;
-				}
-			}
-		}
-
-		foreach ( $input as $key => $values ) {
-			if ( ! is_string( $key ) || 0 !== strpos( $key, 'ads.providers.' ) || ! is_array( $values ) ) {
-				continue;
-			}
-
-			$provider_id = substr( $key, strlen( 'ads.providers.' ) );
-
-			if ( ! isset( $providers[ $provider_id ] ) ) {
-				$providers[ $provider_id ] = $values;
-			}
-		}
-
-		foreach ( $providers as $provider_id => $values ) {
-			$provider_id = sanitize_key( (string) $provider_id );
-
-			if ( '' === $provider_id ) {
-				continue;
-			}
-
-			$key = 'ads.providers.' . $provider_id;
-
-			$existing = isset( $clean[ $key ] ) && is_array( $clean[ $key ] ) ? $clean[ $key ] : array();
-
-			$clean[ $key ] = \MCR\AdProviders\Provider::sanitize_settings( $provider_id, $values, $existing );
 		}
 
 		/**
@@ -412,23 +282,6 @@ class Settings {
 	 * @return mixed
 	 */
 	private static function sanitizeValue( $key, $value, $default ) {
-		/*
-		 * A setting whose value is an array is rendered as a JSON
-		 * textarea, so what arrives from the form is a JSON STRING. It
-		 * has to be decoded before the sanitizer can work with it -
-		 * otherwise the streak bonus map and the coin packages could
-		 * never be saved.
-		 */
-		if ( is_array( $default ) && is_string( $value ) ) {
-			$decoded = json_decode( $value, true );
-
-			if ( is_array( $decoded ) ) {
-				$value = $decoded;
-			} else {
-				return is_array( $default ) ? array() : $default;
-			}
-		}
-
 		if ( is_array( $default ) && 'packages' === substr( $key, 0, 8 ) ) {
 			return self::sanitizePackages( $value );
 		}
@@ -467,16 +320,6 @@ class Settings {
 	 * @return array Threshold => amount.
 	 */
 	public static function sanitizeBonuses( $value ) {
-		/*
-		 * The bonuses are edited in a JSON textarea, so what arrives from
-		 * the form is a JSON string. It is decoded here, so the map can
-		 * actually be saved.
-		 */
-		if ( is_string( $value ) ) {
-			$decoded = json_decode( $value, true );
-			$value   = is_array( $decoded ) ? $decoded : array();
-		}
-
 		if ( ! is_array( $value ) ) {
 			return array();
 		}
@@ -511,18 +354,51 @@ class Settings {
 	 */
 	public static function sanitizePackages( $value ) {
 		/*
-		 * The packages are edited in a JSON textarea, so what arrives
-		 * from the form is a JSON string. It is decoded here, so a
-		 * package can actually be saved.
+		 * The admin editor posts a JSON *string* (it is a <textarea>), so a
+		 * raw string has to be decoded before the array walk below. Without
+		 * this the editor silently saved an empty package list: WordPress
+		 * reported "Settings saved" and then dropped every package.
 		 */
 		if ( is_string( $value ) ) {
-			$decoded = json_decode( $value, true );
-			$value   = is_array( $decoded ) ? $decoded : array();
+			$trimmed = trim( $value );
+
+			if ( '' === $trimmed ) {
+				return array();
+			}
+
+			$decoded = json_decode( $trimmed, true );
+
+			$value = ( JSON_ERROR_NONE === json_last_error() && is_array( $decoded ) ) ? $decoded : array();
 		}
 
 		if ( ! is_array( $value ) ) {
 			return array();
 		}
+
+		// Tolerate a list-style payload by keying each row on its own id.
+		$keyed = array();
+
+		foreach ( $value as $key => $package ) {
+			if ( ! is_array( $package ) ) {
+				continue;
+			}
+
+			$inner_id = isset( $package['id'] ) ? sanitize_key( (string) $package['id'] ) : '';
+
+			if ( '' === $inner_id ) {
+				$inner_id = sanitize_key( (string) $key );
+			}
+
+			if ( '' === $inner_id ) {
+				continue;
+			}
+
+			$package['id'] = $inner_id;
+
+			$keyed[ $inner_id ] = $package;
+		}
+
+		$value = $keyed;
 
 		$clean = array();
 
@@ -549,25 +425,15 @@ class Settings {
 				continue;
 			}
 
-			/*
-			 * The keys written here have to match the editable field list
-			 * of the packages page (Payments\Packages::fields()) exactly.
-			 *
-			 * The list used to be missing "max_bonus", so the per-package
-			 * bonus cap was silently dropped every time the packages form
-			 * was saved: the package round trip lost a field the read path
-			 * (Packages::normalize()) still expects.
-			 */
 			$clean[ $id ] = array(
 				'id'            => $id,
 				'title'         => isset( $package['title'] ) ? sanitize_text_field( $package['title'] ) : '',
 				'coins'         => $coins,
 				'bonus_percent' => isset( $package['bonus_percent'] ) ? max( 0, min( 100, (int) $package['bonus_percent'] ) ) : 0,
-				'max_bonus'     => isset( $package['max_bonus'] ) ? max( 0, (int) $package['max_bonus'] ) : 0,
 				'price'         => $price,
 				'currency'      => isset( $package['currency'] ) ? strtoupper( substr( sanitize_text_field( $package['currency'] ), 0, 8 ) ) : Settings::get( 'purchase.currency', 'USD' ),
 				'badge'         => isset( $package['badge'] ) ? sanitize_text_field( $package['badge'] ) : '',
-				'active'        => ! empty( $package['active'] ) ? 'on' : 'off',
+				'active'        => self::to_toggle( isset( $package['active'] ) ? $package['active'] : 'off' ),
 				'sort_order'    => isset( $package['sort_order'] ) ? (int) $package['sort_order'] : 0,
 				'limit'         => isset( $package['limit'] ) ? max( 0, (int) $package['limit'] ) : 0,
 				'purchased'     => isset( $package['purchased'] ) ? (int) $package['purchased'] : 0,

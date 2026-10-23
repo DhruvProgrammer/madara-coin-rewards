@@ -460,9 +460,14 @@ class Templates {
 
 		$urls['buy']   = $urls['buy_coins'];
 		$urls['login'] = wp_login_url( self::current_url() );
-		$urls['settings'] = current_user_can( 'manage_options' )
-			? admin_url( 'admin.php?page=mcr-settings' )
-			: '';
+		if ( current_user_can( 'manage_options' ) ) {
+			$urls['settings']    = admin_url( 'admin.php?page=mcr-settings' );
+			// Packages are edited on their own screen, not under Settings.
+			$urls['packages']    = admin_url( 'admin.php?page=mcr-packages' );
+		} else {
+			$urls['settings'] = '';
+			$urls['packages'] = '';
+		}
 
 		return $urls;
 	}
@@ -576,6 +581,32 @@ class Templates {
 		$sign = $amount >= 0 ? '+' : "\xE2\x88\x92"; // U+2212 MINUS SIGN.
 
 		return $sign . number_format_i18n( abs( $amount ) );
+	}
+
+	/**
+	 * Returns a decorative coin icon.
+	 *
+	 * Wraps the same sprite symbol the amount renderer uses, but without a
+	 * numeric label, so a hero or a feature card can show a coin at any size
+	 * without the value baked into the artwork.
+	 *
+	 * @param int    $size   Pixel size for the coin (used as the CSS box size).
+	 * @param string $class  Extra classes for the wrapper element.
+	 * @param string $symbol Sprite symbol to draw (1, 5, 10, 50, 100).
+	 * @return string Escaped-safe markup. The sprite itself is printed once
+	 *                per request by the page shell.
+	 */
+	public static function coin_icon( $size = 32, $class = '', $symbol = '10' ) {
+		$size  = max( 8, min( 512, (int) $size ) );
+		$class = preg_replace( '/[^a-z0-9_\- ]/', '', strtolower( (string) $class ) );
+
+		$symbols = array( '1', '5', '10', '50', '100' );
+		$symbol  = in_array( (string) $symbol, $symbols, true ) ? (string) $symbol : '10';
+
+		return '<span class="mcr-coin ' . esc_attr( $class ) . '" style="--mcr-coin-size:' . esc_attr( $size ) . 'px" aria-hidden="true" focusable="false">'
+			. '<svg class="mcr-coin__svg" viewBox="0 0 32 32" focusable="false" aria-hidden="true">'
+			. '<use href="#mcr-coin-symbol-' . esc_attr( $symbol ) . '"></use>'
+			. '</svg></span>';
 	}
 
 	public static function amount( $value, $size = '', array $attrs = array() ) {
@@ -752,85 +783,79 @@ class Templates {
 	 * @return array
 	 */
 	private static function built_in( $slug = '' ) {
-		/*
-		 * The registry is built while the plugin boots, which is before
-		 * the init action, so the labels cannot be translated yet. It is
-		 * therefore NOT cached before init has fired: the next call, from
-		 * the render path, rebuilds it with the translations available.
-		 */
-		if ( empty( self::$pages ) || ! ( function_exists( 'did_action' ) && did_action( 'init' ) ) ) {
+		if ( empty( self::$pages ) ) {
 			self::$pages = array(
 				'checkin'      => array(
-					'label'          => self::text( 'Daily check-in' ),
+					'label'          => __( 'Daily check-in', 'madara-coin-rewards' ),
 					'shortcode'      => 'mcr_checkin',
 					'block'          => 'checkin',
 					'default_layout' => 'default',
 					'layouts'        => array(
-						'default' => self::text( 'Default' ),
-						'hero'    => self::text( 'Hero' ),
-						'compact' => self::text( 'Compact' ),
+						'default' => __( 'Default', 'madara-coin-rewards' ),
+						'hero'    => __( 'Hero', 'madara-coin-rewards' ),
+						'compact' => __( 'Compact', 'madara-coin-rewards' ),
 					),
 					'sections'       => array( 'status', 'streak', 'calendar', 'bonuses', 'rules' ),
-					'lead'           => self::text( 'Claim your coins once a day. Come back tomorrow to keep your streak alive.' ),
+					'lead'           => __( 'Claim your coins once a day. Come back tomorrow to keep your streak alive.', 'madara-coin-rewards' ),
 				),
 				'dashboard'    => array(
-					'label'          => self::text( 'Rewards dashboard' ),
+					'label'          => __( 'Rewards dashboard', 'madara-coin-rewards' ),
 					'shortcode'      => 'mcr_dashboard',
 					'block'          => 'dashboard',
 					'default_layout' => 'default',
 					'layouts'        => array(
-						'default' => self::text( 'Grid' ),
-						'list'    => self::text( 'List' ),
-						'hero'    => self::text( 'Hero' ),
+						'default' => __( 'Grid', 'madara-coin-rewards' ),
+						'list'    => __( 'List', 'madara-coin-rewards' ),
+						'hero'    => __( 'Hero', 'madara-coin-rewards' ),
 					),
 					'sections'       => array( 'balance', 'stats', 'quick', 'recent', 'streak', 'ads' ),
-					'lead'           => self::text( 'Balance, streaks and everything you have earned so far.' ),
+					'lead'           => __( 'Balance, streaks and everything you have earned so far.', 'madara-coin-rewards' ),
 				),
 				'ads'          => array(
-					'label'          => self::text( 'Watch ads' ),
+					'label'          => __( 'Watch ads', 'madara-coin-rewards' ),
 					'shortcode'      => 'mcr_ads',
 					'block'          => 'ads',
 					'default_layout' => 'default',
 					'layouts'        => array(
-						'default' => self::text( 'Cards' ),
+						'default' => __( 'Cards', 'madara-coin-rewards' ),
 					),
 					'sections'       => array( 'status', 'providers', 'limits', 'recent' ),
-					'lead'           => self::text( 'Watch a short ad to earn coins. Limits reset daily.' ),
+					'lead'           => __( 'Watch a short ad to earn coins. Limits reset daily.', 'madara-coin-rewards' ),
 				),
 				'buy-coins'    => array(
-					'label'          => self::text( 'Buy coins' ),
+					'label'          => __( 'Buy coins', 'madara-coin-rewards' ),
 					'shortcode'      => 'mcr_buy_coins',
 					'block'          => 'buy-coins',
 					'default_layout' => 'default',
 					'layouts'        => array(
-						'default' => self::text( 'Grid' ),
+						'default' => __( 'Grid', 'madara-coin-rewards' ),
 					),
 					'sections'       => array( 'balance', 'packages', 'gateways', 'faq' ),
-					'lead'           => self::text( 'Top up your balance. Coins are added as soon as payment is confirmed.' ),
+					'lead'           => __( 'Top up your balance. Coins are added as soon as payment is confirmed.', 'madara-coin-rewards' ),
 				),
 				'transactions' => array(
-					'label'          => self::text( 'Transaction history' ),
+					'label'          => __( 'Transaction history', 'madara-coin-rewards' ),
 					'shortcode'      => 'mcr_transactions',
 					'block'          => 'transactions',
 					'default_layout' => 'default',
 					'layouts'        => array(
-						'default' => self::text( 'Table' ),
+						'default' => __( 'Table', 'madara-coin-rewards' ),
 					),
 					'sections'       => array( 'summary', 'list', 'pagination' ),
-					'lead'           => self::text( 'Every coin you have earned or spent, newest first.' ),
+					'lead'           => __( 'Every coin you have earned or spent, newest first.', 'madara-coin-rewards' ),
 				),
 				'balance'      => array(
-					'label'          => self::text( 'Balance panel' ),
+					'label'          => __( 'Balance panel', 'madara-coin-rewards' ),
 					'shortcode'      => 'mcr_balance',
 					'block'          => 'balance',
 					'default_layout' => 'default',
 					'layouts'        => array(
-						'default' => self::text( 'Card' ),
-						'inline'  => self::text( 'Inline' ),
-						'hero'    => self::text( 'Hero' ),
+						'default' => __( 'Card', 'madara-coin-rewards' ),
+						'inline'  => __( 'Inline', 'madara-coin-rewards' ),
+						'hero'    => __( 'Hero', 'madara-coin-rewards' ),
 					),
 					'sections'       => array( 'balance', 'tier', 'actions' ),
-					'lead'           => self::text( 'Your coin balance at a glance.' ),
+					'lead'           => __( 'Your coin balance at a glance.', 'madara-coin-rewards' ),
 				),
 			);
 		}
@@ -909,7 +934,6 @@ class Templates {
 		$html  = '<div class="' . esc_attr( $classes ) . '" data-mcr-page="' . esc_attr( $slug ) . '" data-mcr-layout="' . esc_attr( $layout ) . '">';
 		$html .= self::coin_sprite();
 		$html .= $header;
-
 		$html .= '<div class="mcr-page__body">' . $content . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 
 		/*
@@ -920,17 +944,6 @@ class Templates {
 		 */
 		++self::$render_count;
 
-		/*
-		 * A page can render the plugin more than once - a shortcode and
-		 * the sidebar widget, for example. Two copies of the same id are
-		 * invalid HTML, and aria-labelledby then points at the wrong
-		 * heading, so every id after the first render is suffixed
-		 * together with the references to it.
-		 */
-		if ( self::$render_count > 1 ) {
-			$html = self::suffix_ids( $html, '-' . self::$render_count );
-		}
-
 		$live_id = 1 === self::$render_count ? 'mcr-live-balance' : 'mcr-live-balance-' . self::$render_count;
 
 		$html .= '<div class="mcr-sr-only" data-mcr-live="balance" id="' . esc_attr( $live_id ) . '" aria-live="polite" aria-atomic="true"></div>';
@@ -938,97 +951,6 @@ class Templates {
 		$html .= '</div>';
 
 		return $html;
-	}
-
-	/**
-	 * Makes the element ids in a rendered block unique.
-	 *
-	 * Every id the markup declares, and every reference to it, gets the
-	 * same suffix.
-	 *
-	 * @param string $html   The rendered markup.
-	 * @param string $suffix The suffix to add.
-	 * @return string
-	 */
-	private static function suffix_ids( $html, $suffix ) {
-		if ( ! preg_match_all( '/ id="(mcr-[^"]*)"/', $html, $matches ) ) {
-			return $html;
-		}
-
-		foreach ( array_unique( $matches[1] ) as $id ) {
-			$new = $id . $suffix;
-
-			$html = str_replace( 'id="' . $id . '"', 'id="' . $new . '"', $html );
-			$html = str_replace( 'for="' . $id . '"', 'for="' . $new . '"', $html );
-			$html = str_replace( 'aria-labelledby="' . $id . '"', 'aria-labelledby="' . $new . '"', $html );
-			$html = str_replace( 'aria-controls="' . $id . '"', 'aria-controls="' . $new . '"', $html );
-			$html = str_replace( 'aria-describedby="' . $id . '"', 'aria-describedby="' . $new . '"', $html );
-			$html = str_replace( 'href="#' . $id . '"', 'href="#' . $new . '"', $html );
-		}
-
-		return $html;
-	}
-
-	/**
-	 * The catalogue of strings the page registry ships with.
-	 *
-	 * The registry is built while the plugin boots, which is before the
-	 * init action, so the text domain is not loaded yet. Calling a
-	 * translation function at that point makes WordPress raise
-	 * "_load_textdomain_just_in_time was called incorrectly" on every
-	 * request, and the string is never translated.
-	 *
-	 * Every entry carries a literal message id, so a translator is able to
-	 * match it: a computed message id can never be translated.
-	 *
-	 * @return array Map of source string to translated string.
-	 */
-	private static function strings() {
-		return array(
-			'Daily check-in'                                                             => __( 'Daily check-in', 'madara-coin-rewards' ),
-			'Default'                                                                    => __( 'Default', 'madara-coin-rewards' ),
-			'Hero'                                                                       => __( 'Hero', 'madara-coin-rewards' ),
-			'Compact'                                                                    => __( 'Compact', 'madara-coin-rewards' ),
-			'Claim your coins once a day. Come back tomorrow to keep your streak alive.' => __( 'Claim your coins once a day. Come back tomorrow to keep your streak alive.', 'madara-coin-rewards' ),
-			'Rewards dashboard'                                                          => __( 'Rewards dashboard', 'madara-coin-rewards' ),
-			'Grid'                                                                       => __( 'Grid', 'madara-coin-rewards' ),
-			'List'                                                                       => __( 'List', 'madara-coin-rewards' ),
-			'Balance, streaks and everything you have earned so far.'                    => __( 'Balance, streaks and everything you have earned so far.', 'madara-coin-rewards' ),
-			'Watch ads'                                                                  => __( 'Watch ads', 'madara-coin-rewards' ),
-			'Cards'                                                                      => __( 'Cards', 'madara-coin-rewards' ),
-			'Watch a short ad to earn coins. Limits reset daily.'                        => __( 'Watch a short ad to earn coins. Limits reset daily.', 'madara-coin-rewards' ),
-			'Buy coins'                                                                  => __( 'Buy coins', 'madara-coin-rewards' ),
-			'Top up your balance. Coins are added as soon as payment is confirmed.'      => __( 'Top up your balance. Coins are added as soon as payment is confirmed.', 'madara-coin-rewards' ),
-			'Transaction history'                                                        => __( 'Transaction history', 'madara-coin-rewards' ),
-			'Table'                                                                      => __( 'Table', 'madara-coin-rewards' ),
-			'Every coin you have earned or spent, newest first.'                         => __( 'Every coin you have earned or spent, newest first.', 'madara-coin-rewards' ),
-			'Balance panel'                                                              => __( 'Balance panel', 'madara-coin-rewards' ),
-			'Card'                                                                       => __( 'Card', 'madara-coin-rewards' ),
-			'Inline'                                                                     => __( 'Inline', 'madara-coin-rewards' ),
-			'Your coin balance at a glance.'                                             => __( 'Your coin balance at a glance.', 'madara-coin-rewards' ),
-		);
-	}
-
-	/**
-	 * Translates a registry string.
-	 *
-	 * The registry is built while the plugin boots, which is before the
-	 * init action, so the text domain is not loaded yet. Calling a
-	 * translation function at that point makes WordPress raise
-	 * "_load_textdomain_just_in_time was called incorrectly" on every
-	 * request, and the string is never translated.
-	 *
-	 * @param string $source The source string.
-	 * @return string The translated string, or the source when unknown.
-	 */
-	public static function text( $source ) {
-		if ( function_exists( 'did_action' ) && did_action( 'init' ) ) {
-			$strings = self::strings();
-
-			return isset( $strings[ $source ] ) ? $strings[ $source ] : $source;
-		}
-
-		return $source;
 	}
 
 	/**

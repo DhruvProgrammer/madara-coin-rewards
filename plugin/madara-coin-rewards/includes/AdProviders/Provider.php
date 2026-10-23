@@ -138,18 +138,6 @@ abstract class Provider {
 	}
 
 	/**
-	 * The setting keys that hold a secret, per provider.
-	 *
-	 * The values of these keys are encrypted at rest before they are
-	 * stored, and they are never rendered back into the settings form.
-	 *
-	 * @var array<string, string[]>
-	 */
-	const SECRET_FIELDS = array(
-		'generic_s2s' => array( 'postback_secret' ),
-	);
-
-	/**
 	 * Loads a provider's stored settings (Settings key `ads.providers.{id}`).
 	 *
 	 * @param string $provider_id Provider slug.
@@ -169,28 +157,7 @@ abstract class Provider {
 	 * @return bool
 	 */
 	public static function save_settings( $provider_id, array $values ) {
-		$provider_id = sanitize_key( (string) $provider_id );
-		$existing    = Settings::get( 'ads.providers.' . $provider_id, array() );
-		$existing    = is_array( $existing ) ? $existing : array();
-
-		return Settings::update( array( 'ads.providers.' . $provider_id => self::sanitize_settings( $provider_id, $values, $existing ) ) );
-	}
-
-	/**
-	 * Sanitizes a provider's settings and encrypts its secret fields.
-	 *
-	 * An empty secret field means "keep the secret that is already
-	 * stored".
-	 *
-	 * @param string $provider_id Provider slug.
-	 * @param array  $values      Raw submitted values.
-	 * @param array  $existing    The values that are already stored.
-	 * @return array
-	 */
-	public static function sanitize_settings( $provider_id, array $values, array $existing = array() ) {
-		$provider_id = sanitize_key( (string) $provider_id );
-		$secrets     = isset( self::SECRET_FIELDS[ $provider_id ] ) ? self::SECRET_FIELDS[ $provider_id ] : array();
-		$clean       = $existing;
+		$clean = array();
 
 		foreach ( $values as $key => $value ) {
 			$key = sanitize_key( (string) $key );
@@ -199,26 +166,10 @@ abstract class Provider {
 				continue;
 			}
 
-			if ( is_array( $value ) ) {
-				$clean[ $key ] = self::sanitize_setting_value( $value );
-				continue;
-			}
-
-			$value = sanitize_text_field( (string) $value );
-
-			if ( in_array( $key, $secrets, true ) ) {
-				if ( '' === $value ) {
-					// Keep whatever is already stored.
-					continue;
-				}
-
-				$value = \MCR\Support\Secrets::encrypt( $value );
-			}
-
-			$clean[ $key ] = $value;
+			$clean[ $key ] = self::sanitize_setting_value( $value );
 		}
 
-		return $clean;
+		return Settings::update( array( 'ads.providers.' . sanitize_key( (string) $provider_id ) => $clean ) );
 	}
 
 	/**

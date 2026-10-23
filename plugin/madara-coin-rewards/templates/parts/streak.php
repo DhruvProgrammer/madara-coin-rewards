@@ -17,7 +17,6 @@ defined( 'ABSPATH' ) || exit;
 $mcr_calendar = isset( $args['calendar'] ) && is_array( $args['calendar'] ) ? $args['calendar'] : array();
 $mcr_bonuses  = isset( $args['bonuses'] ) && is_array( $args['bonuses'] ) ? $args['bonuses'] : array();
 $mcr_days     = isset( $args['days'] ) ? max( 1, absint( $args['days'] ) ) : 7;
-$mcr_claimable = ! empty( $args['claimable'] );
 
 $mcr_items = array();
 
@@ -58,15 +57,6 @@ if ( empty( $mcr_items ) ) {
 
 		if ( $mcr_today ) {
 			$mcr_classes .= ' is-today';
-
-			/*
-			 * Today is AVAILABLE when the reward has not been claimed
-			 * yet. The reader has to be able to tell "available now"
-			 * apart from "already claimed" and from "still to come".
-			 */
-			if ( $mcr_claimable ) {
-				$mcr_classes .= ' is-available';
-			}
 		}
 
 		if ( $mcr_is_bonus ) {
@@ -74,13 +64,9 @@ if ( empty( $mcr_items ) ) {
 		}
 
 		$mcr_date_label = '' !== $mcr_date ? \MCR\Templates\Templates::format_date( $mcr_date ) : '';
-		/*
-		 * The weekday follows the site's language. gmdate() is always
-		 * English, so it is only the last resort.
-		 */
-		$mcr_weekday = isset( $mcr_day['label'] ) && '' !== (string) $mcr_day['label']
+		$mcr_weekday    = isset( $mcr_day['label'] ) && '' !== (string) $mcr_day['label']
 			? (string) $mcr_day['label']
-			: ( '' !== $mcr_date ? date_i18n( 'D', (int) strtotime( $mcr_date . ' 00:00:00' ) ) : '' );
+			: ( '' !== $mcr_date ? gmdate( 'D', (int) strtotime( $mcr_date . ' 00:00:00' ) ) : '' );
 
 		if ( $mcr_claimed ) {
 			$mcr_sr = sprintf(
@@ -95,12 +81,6 @@ if ( empty( $mcr_items ) ) {
 				__( '%s: upcoming.', 'madara-coin-rewards' ),
 				$mcr_date_label
 			);
-		} elseif ( $mcr_today && $mcr_claimable ) {
-			$mcr_sr = sprintf(
-				/* translators: %s: date */
-				__( '%s: available, ready to claim.', 'madara-coin-rewards' ),
-				$mcr_date_label
-			);
 		} else {
 			$mcr_sr = sprintf(
 				/* translators: %s: date */
@@ -109,9 +89,9 @@ if ( empty( $mcr_items ) ) {
 			);
 		}
 		?>
-		<li class="<?php echo esc_attr( $mcr_classes ); ?>"<?php if ( $mcr_today ) : ?> aria-current="date"<?php endif; ?>>
+		<li class="<?php echo esc_attr( $mcr_classes ); ?>"<?php echo esc_attr( $mcr_today ? ' aria-current="date"' : '' ); ?>>
 			<span class="mcr-streak__label" aria-hidden="true"><?php echo esc_html( $mcr_weekday ); ?></span>
-			<span class="mcr-streak__dot" aria-hidden="true"><?php echo esc_html( $mcr_claimed ? '✓' : '·' ); ?></span>
+			<span class="mcr-streak__dot" aria-hidden="true"><?php echo esc_html( $mcr_claimed ? '&#10003;' : '&#183;' ); ?></span>
 			<span class="mcr-sr-only"><?php echo esc_html( $mcr_sr ); ?></span>
 		</li>
 	<?php endforeach; ?>

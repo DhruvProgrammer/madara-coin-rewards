@@ -38,51 +38,6 @@ foreach ( $mcr_rows as $mcr_row ) {
 }
 
 $mcr_net = $mcr_in - $mcr_out;
-
-/*
- * A page can render the plugin more than once, and two copies of the
- * transaction table would share the id of the table body. The script
- * falls back to getElementById( 'mcr-txn-rows' ), so with two tables
- * that id the "load more" rows of the second table would be appended to
- * the first one.
- *
- * Every copy therefore gets an id of its own: the first table of a page
- * keeps the canonical id="mcr-txn-rows" the script knows, every other
- * table gets a numeric suffix. The suffix counts every table of the
- * request, so it never repeats. The page counter restarts when the
- * plugin renders a page of another kind, so the first table of every
- * page can use the canonical id and two tables of one page never
- * collide.
- */
-if ( ! isset( $GLOBALS['mcr_txn_table_reset'] ) ) {
-	$GLOBALS['mcr_txn_table_reset'] = static function ( $filter_args, $slug ) {
-		if ( 'transactions' !== $slug ) {
-			$GLOBALS['mcr_txn_table_page_counter'] = 0;
-		}
-
-		return $filter_args;
-	};
-
-	add_filter( 'mcr_get_template_args', $GLOBALS['mcr_txn_table_reset'], 10, 2 );
-}
-
-$mcr_rows_id = '';
-
-if ( ! empty( $mcr_rows ) ) {
-	$GLOBALS['mcr_txn_table_counter'] = isset( $GLOBALS['mcr_txn_table_counter'] )
-		? (int) $GLOBALS['mcr_txn_table_counter'] + 1
-		: 1;
-
-	$GLOBALS['mcr_txn_table_page_counter'] = isset( $GLOBALS['mcr_txn_table_page_counter'] )
-		? (int) $GLOBALS['mcr_txn_table_page_counter'] + 1
-		: 1;
-
-	$mcr_rows_id = 1 === (int) $GLOBALS['mcr_txn_table_page_counter']
-		? 'mcr-txn-rows'
-		: 'mcr-txn-rows-' . (int) $GLOBALS['mcr_txn_table_counter'];
-}
-
-$mcr_rows_attr = 'id="' . esc_attr( $mcr_rows_id ) . '"';
 ?>
 <?php if ( ! empty( $mcr_rows ) ) : ?>
 	<section class="mcr-section" id="mcr-txn-summary" aria-labelledby="mcr-txn-summary-title">
@@ -201,19 +156,7 @@ $mcr_rows_attr = 'id="' . esc_attr( $mcr_rows_id ) . '"';
 							<th scope="col" class="mcr-table__num"><?php esc_html_e( 'Balance after', 'madara-coin-rewards' ); ?></th>
 						</tr>
 					</thead>
-					<?php
-					/*
-					 * The id is written as a whole attribute on a line of its
-					 * own on purpose: the page shell only rewrites the ids it
-					 * finds behind a space, and this one must keep the value
-					 * the template gave it, because the "load more" button
-					 * points at it and the two must never drift apart.
-					 */
-					?>
-					<tbody
-						<?php echo $mcr_rows_attr; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-						data-mcr-txn-rows="1"
-					>
+					<tbody id="mcr-txn-rows">
 						<?php foreach ( $mcr_rows as $mcr_row ) : ?>
 							<?php
 							$mcr_amount  = isset( $mcr_row['amount'] ) ? (int) $mcr_row['amount'] : 0;
@@ -257,7 +200,7 @@ $mcr_rows_attr = 'id="' . esc_attr( $mcr_rows_id ) . '"';
 					data-mcr-next-page="<?php echo esc_attr( $mcr_next_page ); ?>"
 					data-mcr-shown="<?php echo esc_attr( $mcr_shown ); ?>"
 					data-mcr-total="<?php echo esc_attr( $mcr_total ); ?>"
-					aria-controls="<?php echo esc_attr( $mcr_rows_id ); ?>">
+					aria-controls="mcr-txn-rows">
 					<?php esc_html_e( 'Load more', 'madara-coin-rewards' ); ?>
 				</button>
 				<?php if ( '' !== $mcr_next_url ) : ?>

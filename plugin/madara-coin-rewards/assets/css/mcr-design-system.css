@@ -75,7 +75,7 @@
   /* coin gold family, derived from @star-color #ffd900 */
   --mcr-coin-100: #fff6bf; --mcr-coin-200: #ffe45c; --mcr-coin-300: #ffd900;
   --mcr-coin-400: #f2b705; --mcr-coin-500: #c98a04; --mcr-coin-600: #b8790a;
-  --mcr-coin-ink: #5a3d00; --mcr-coin-glow: rgba(255,217,0,.35); --mcr-coin-size: 16px;
+  --mcr-coin-ink: #6b4a00; --mcr-coin-glow: rgba(255,217,0,.35); --mcr-coin-size: 16px;
   /* semantic tints (pre-mixed: no color-mix dependency) */
   --mcr-success-bg: #eaf6ea; --mcr-info-bg: #e8f7fb; --mcr-warning-bg: #fdf3e6;
   --mcr-danger-bg: #fbeceb; --mcr-accent-bg: #fdeaec; --mcr-neutral-bg: #efefef;
@@ -90,20 +90,14 @@
   --mcr-z-toast: 100100; --mcr-z-modal: 100200;
   /* theme bridge. Madara prints --primary-color/--secondary-color only when
      "site_custom_colors" is on (css/custom.css.php:166-171); --border-light-color
-     is not emitted by this build, so the fallback is what really applies.
-
-     --mcr-accent and --mcr-accent-2 are NOT declared here. A declaration on
-     the plugin scope would SHADOW the value the theme bridge writes to
-     :root, so a site that overrides the accent colour could never reach the
-     plugin. Every use site carries the fallback chain instead:
-     var(--mcr-accent, var(--primary-color, #eb3349)) - the site value first,
-     then the theme's own colour, then the Madara default. */
+     is not emitted by this build, so the fallback is what really applies. */
+  --mcr-accent: var(--primary-color, #eb3349);
+  --mcr-accent-2: var(--secondary-color, #f45c43);
   /* Text-bearing accent. The theme's #eb3349 is 4.12:1 against white, which
      fails WCAG AA at 14px, so anything that CARRIES TEXT uses this darker
      shade (5.51:1). --mcr-accent stays for decoration, borders and focus
      rings, where the 3:1 non-text threshold applies. */
   --mcr-accent-text: #c62b3c;
-  /* The button's own background. In the light scheme it is the brand red (5.51:1 with white). */
   --mcr-accent-text-hover: #a8231d;
   --mcr-link: var(--mcr-accent-text);
   --mcr-link-hover: var(--mcr-brand-hover);
@@ -135,15 +129,7 @@ body.mcr-scheme-dark .mcr-scope, body.mcr-scheme-dark .mcr-portal {
   --mcr-shadow-sm: 0 1px 2px rgba(0,0,0,.5); --mcr-shadow-md: 0 6px 18px rgba(0,0,0,.55);
   --mcr-shadow-lg: 0 18px 40px rgba(0,0,0,.65); --mcr-coin-glow: rgba(255,217,0,.22);
   --mcr-link: #f45c43; --mcr-link-hover: #ffd900; /* accent stays legible on #262626 */
-  --mcr-accent-text: #c62b3c; --mcr-accent-text-hover: #ffd900;
-  /* The DARK scheme lightened the accent for text on a dark surface, but this
-     value is also the fill of a solid button and of the package ribbon, both
-     with white text. #f45c43 on white is 3.23:1, under AA, so the accent text
-     stays the darker red. The links use --mcr-link, which the dark scheme
-     sets separately to the lightened accent. */
-  /* The DARK scheme lightens the accent for TEXT on a dark surface, and white on
-     that lightened red is only 3.23:1, so the button keeps a darker red of
-     its own. White on this is 6.65:1, so the label clears AA. */
+  --mcr-accent-text: #f45c43; --mcr-accent-text-hover: #ffd900;
 }
 
 /* === 03 TOKENS: prefers-color-scheme fallback =============================
@@ -193,11 +179,11 @@ body.mcr-scheme-dark .mcr-scope, body.mcr-scheme-dark .mcr-portal {
 }
 .mcr-scope img, .mcr-scope svg { max-width: 100%; }
 .mcr-scope :focus-visible, .mcr-portal :focus-visible {
-  outline: 2px solid var(--mcr-accent, var(--primary-color, #eb3349)); outline-offset: 2px; border-radius: var(--mcr-radius-sm);
+  outline: 2px solid var(--mcr-accent); outline-offset: 2px; border-radius: var(--mcr-radius-sm);
 }
 /* scroll containers would clip an offset outline -> inset ring instead */
 .mcr-streak :focus-visible, .mcr-tabs__list :focus-visible, .mcr-table__wrap :focus-visible {
-  outline: 0; box-shadow: inset 0 0 0 2px var(--mcr-accent, var(--primary-color, #eb3349));
+  outline: 0; box-shadow: inset 0 0 0 2px var(--mcr-accent);
 }
 /* Use .mcr-sr-only, not the theme's .screen-reader-text: Madara sets
    `.widget label.screen-reader-text{display:none}` (style.css:1498-1500). */
@@ -277,12 +263,20 @@ body.mcr-scheme-dark .mcr-scope, body.mcr-scheme-dark .mcr-portal {
     border-color var(--mcr-duration) var(--mcr-ease);
 }
 .mcr-card--interactive:hover {
-  border-color: var(--mcr-accent, var(--primary-color, #eb3349)); box-shadow: var(--mcr-shadow-md); transform: translateY(-2px);
+  border-color: var(--mcr-accent); box-shadow: var(--mcr-shadow-md); transform: translateY(-2px);
 }
 .mcr-card__header {
   display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-block-end: 14px;
+  /* Let a long badge drop below the title on a narrow card instead of
+     crushing the title into a 3-line column beside it. */
+  flex-wrap: wrap;
 }
-.mcr-card__title { margin: 0; font-family: var(--mcr-font-heading); font-size: var(--mcr-h5); font-weight: 600; line-height: 1.35; }
+.mcr-card__title {
+  margin: 0; font-family: var(--mcr-font-heading); font-size: var(--mcr-h5); font-weight: 600; line-height: 1.35;
+  /* Keep a usable minimum: the title must never be squeezed narrower than this,
+     it wraps into an unreadable one-word-per-line column otherwise. */
+  flex: 1 1 140px; min-width: 140px;
+}
 .mcr-card__meta { margin: 4px 0 0; font-size: 11px; line-height: 1.5; color: var(--mcr-text-secondary); }
 .mcr-card__body { flex: 1 1 auto; min-width: 0; }
 .mcr-card__body > * + * { margin-block-start: 14px; }
@@ -303,7 +297,7 @@ body.mcr-scheme-dark .mcr-scope, body.mcr-scheme-dark .mcr-portal {
   padding: var(--mcr-space-card-sm); background: var(--mcr-bg-surface);
   border: 1px solid var(--mcr-border); border-radius: var(--mcr-radius); box-shadow: var(--mcr-shadow-sm);
 }
-.mcr-stat--accent { border-color: var(--mcr-accent, var(--primary-color, #eb3349)); background: var(--mcr-accent-bg); }
+.mcr-stat--accent { border-color: var(--mcr-accent); background: var(--mcr-accent-bg); }
 .mcr-stat__label {
   font-size: 11px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase;
   color: var(--mcr-text-secondary);
@@ -338,29 +332,39 @@ body.mcr-scheme-dark .mcr-scope, body.mcr-scheme-dark .mcr-portal {
     border-color var(--mcr-duration) var(--mcr-ease),
     color var(--mcr-duration) var(--mcr-ease), opacity var(--mcr-duration) var(--mcr-ease);
 }
-/* doubled scope beats `body.text-ui-light a:not(:hover)` for <a class="mcr-btn"> */
-.mcr-scope.mcr-scope .mcr-btn, .mcr-portal.mcr-portal .mcr-btn { color: #fff; }
-.mcr-scope.mcr-scope .mcr-btn:hover, .mcr-portal.mcr-portal .mcr-btn:hover {
-  color: #fff; background: var(--mcr-brand-hover); border-color: var(--mcr-brand-hover);
+/* Button colour. The scope is TRIPLED, not doubled.
+   An `<a class="mcr-btn">` is also a bare link inside the scope, and the
+   generic link rule at the top of this file is `.mcr-scope.mcr-scope.mcr-scope a`
+   = specificity (0,3,1). A doubled scope here is only (0,2,0), so it LOSES
+   and the button inherits `color: var(--mcr-link)` (#c62b3c) - the exact
+   same maroon as its own background, i.e. an invisible label.
+   Tripling gives (0,4,0) and wins without !important. */
+.mcr-scope.mcr-scope.mcr-scope .mcr-btn,
+.mcr-portal.mcr-portal.mcr-portal .mcr-btn { color: #fff !important; text-decoration: none; }
+.mcr-scope.mcr-scope.mcr-scope .mcr-btn:hover,
+.mcr-portal.mcr-portal.mcr-portal .mcr-btn:hover,
+.mcr-scope.mcr-scope.mcr-scope .mcr-btn:focus-visible,
+.mcr-portal.mcr-portal.mcr-portal .mcr-btn:focus-visible {
+  color: #fff !important; background: var(--mcr-brand-hover); border-color: var(--mcr-brand-hover);
 }
 .mcr-btn--lg { padding: 15px 40px; font-size: var(--mcr-h6); }
 .mcr-btn--sm { min-height: 36px; padding: 8px 14px; font-size: 12px; }
-.mcr-btn--ghost { background: transparent; border-color: var(--mcr-accent, var(--primary-color, #eb3349)); color: var(--mcr-accent, var(--primary-color, #eb3349)); }
-.mcr-scope.mcr-scope .mcr-btn--ghost, .mcr-portal.mcr-portal .mcr-btn--ghost { color: var(--mcr-accent, var(--primary-color, #eb3349)); }
-.mcr-scope.mcr-scope .mcr-btn--ghost:hover, .mcr-portal.mcr-portal .mcr-btn--ghost:hover {
+.mcr-btn--ghost { background: transparent; border-color: var(--mcr-accent); color: var(--mcr-accent); }
+.mcr-scope.mcr-scope.mcr-scope .mcr-btn--ghost, .mcr-portal.mcr-portal.mcr-portal .mcr-btn--ghost { color: var(--mcr-accent-text) !important; }
+.mcr-scope.mcr-scope.mcr-scope .mcr-btn--ghost:hover, .mcr-portal.mcr-portal.mcr-portal .mcr-btn--ghost:hover {
   background: var(--mcr-brand-hover); border-color: var(--mcr-brand-hover); color: #fff;
 }
 .mcr-btn--quiet { background: var(--mcr-bg-muted); border-color: var(--mcr-border); }
-.mcr-scope.mcr-scope .mcr-btn--quiet, .mcr-portal.mcr-portal .mcr-btn--quiet { color: var(--mcr-text-primary); }
-.mcr-scope.mcr-scope .mcr-btn--quiet:hover, .mcr-portal.mcr-portal .mcr-btn--quiet:hover {
+.mcr-scope.mcr-scope.mcr-scope .mcr-btn--quiet, .mcr-portal.mcr-portal.mcr-portal .mcr-btn--quiet { color: var(--mcr-text-primary) !important; }
+.mcr-scope.mcr-scope.mcr-scope .mcr-btn--quiet:hover, .mcr-portal.mcr-portal.mcr-portal .mcr-btn--quiet:hover {
   background: var(--mcr-brand-hover); border-color: var(--mcr-brand-hover); color: #fff;
 }
 .mcr-btn--gold {
   background: linear-gradient(180deg, var(--mcr-coin-200), var(--mcr-coin-400));
   border-color: var(--mcr-coin-500); box-shadow: 0 2px 8px var(--mcr-coin-glow);
 }
-.mcr-scope.mcr-scope .mcr-btn--gold, .mcr-portal.mcr-portal .mcr-btn--gold { color: var(--mcr-coin-ink); }
-.mcr-scope.mcr-scope .mcr-btn--gold:hover, .mcr-portal.mcr-portal .mcr-btn--gold:hover {
+.mcr-scope.mcr-scope.mcr-scope .mcr-btn--gold, .mcr-portal.mcr-portal.mcr-portal .mcr-btn--gold { color: var(--mcr-coin-ink) !important; }
+.mcr-scope.mcr-scope.mcr-scope .mcr-btn--gold:hover, .mcr-portal.mcr-portal.mcr-portal .mcr-btn--gold:hover {
   background: linear-gradient(180deg, var(--mcr-coin-100), var(--mcr-coin-300));
   border-color: var(--mcr-coin-600); color: var(--mcr-coin-ink);
 }
@@ -379,7 +383,7 @@ body.mcr-scheme-dark .mcr-scope, body.mcr-scheme-dark .mcr-portal {
   border-radius: var(--mcr-radius-circle); animation: mcr-spin 700ms linear infinite;
 }
 .mcr-btn--ghost.is-loading::after, .mcr-btn--quiet.is-loading::after {
-  border-color: var(--mcr-border); border-top-color: var(--mcr-accent, var(--primary-color, #eb3349));
+  border-color: var(--mcr-border); border-top-color: var(--mcr-accent);
 }
 @keyframes mcr-spin { to { transform: rotate(360deg); } }
 
@@ -394,6 +398,8 @@ body.mcr-scheme-dark .mcr-scope, body.mcr-scheme-dark .mcr-portal {
   background: var(--mcr-neutral-bg); color: var(--mcr-text-secondary);
   font-size: 11px; font-weight: 600; line-height: 1.6; letter-spacing: .2px;
   white-space: nowrap; vertical-align: middle;
+  /* A badge must never stretch to fill the header it sits in. */
+  flex: 0 0 auto; max-width: 100%;
 }
 .mcr-badge--dot::before {
   content: ""; width: 6px; height: 6px; border-radius: var(--mcr-radius-circle); background: currentColor;
@@ -406,7 +412,7 @@ body.mcr-scheme-dark .mcr-scope, body.mcr-scheme-dark .mcr-portal {
   background: linear-gradient(180deg, var(--mcr-coin-200), var(--mcr-coin-300));
   border-color: var(--mcr-coin-500); color: var(--mcr-coin-ink);
 }
-.mcr-badge--accent { background: var(--mcr-accent-bg); border-color: var(--mcr-accent, var(--primary-color, #eb3349)); color: var(--mcr-text-primary); }
+.mcr-badge--accent { background: var(--mcr-accent-bg); border-color: var(--mcr-accent); color: var(--mcr-text-primary); }
 
 /* === 11 PROGRESS =========================================================
    Bootstrap `.progress` exists (1rem tall, .25rem radius, #e9ecef) but is
@@ -423,7 +429,7 @@ body.mcr-scheme-dark .mcr-scope, body.mcr-scheme-dark .mcr-portal {
 .mcr-progress--lg { height: 12px; }
 .mcr-progress__bar {
   display: block; height: 100%; width: var(--mcr-progress-value, 0%);
-  background: linear-gradient(90deg, var(--mcr-accent, var(--primary-color, #eb3349)), var(--mcr-accent-2, var(--secondary-color, #f45c43)));
+  background: linear-gradient(90deg, var(--mcr-accent), var(--mcr-accent-2));
   border-radius: inherit; transition: width 450ms var(--mcr-ease);
 }
 .mcr-progress--gold .mcr-progress__bar {
@@ -512,8 +518,8 @@ body.mcr-scheme-dark .mcr-scope, body.mcr-scheme-dark .mcr-portal {
 }
 .mcr-streak__day.is-done { border-color: var(--mcr-success); background: var(--mcr-success-bg); }
 .mcr-streak__day.is-done .mcr-streak__dot { background: var(--mcr-success-text); color: var(--mcr-bg-surface); }
-.mcr-streak__day.is-today { border-color: var(--mcr-accent, var(--primary-color, #eb3349)); box-shadow: inset 0 0 0 1px var(--mcr-accent, var(--primary-color, #eb3349)); }
-.mcr-streak__day.is-today .mcr-streak__dot { background: var(--mcr-accent, var(--primary-color, #eb3349)); color: #fff; }
+.mcr-streak__day.is-today { border-color: var(--mcr-accent); box-shadow: inset 0 0 0 1px var(--mcr-accent); }
+.mcr-streak__day.is-today .mcr-streak__dot { background: var(--mcr-accent); color: #fff; }
 .mcr-streak__day.is-missed .mcr-streak__dot { background: var(--mcr-bg-muted); color: var(--mcr-text-muted); }
 .mcr-streak__day.is-locked { opacity: .6; }
 .mcr-streak__day.is-bonus::after {
@@ -560,9 +566,9 @@ body.mcr-scheme-dark .mcr-scope, body.mcr-scheme-dark .mcr-portal {
   transition: border-color var(--mcr-duration) var(--mcr-ease),
     box-shadow var(--mcr-duration) var(--mcr-ease), transform var(--mcr-duration) var(--mcr-ease);
 }
-.mcr-package:hover { border-color: var(--mcr-accent, var(--primary-color, #eb3349)); box-shadow: var(--mcr-shadow-md); transform: translateY(-2px); }
+.mcr-package:hover { border-color: var(--mcr-accent); box-shadow: var(--mcr-shadow-md); transform: translateY(-2px); }
 .mcr-package.is-featured {
-  border-color: var(--mcr-accent, var(--primary-color, #eb3349)); border-width: 2px;
+  border-color: var(--mcr-accent); border-width: 2px;
   padding: calc(var(--mcr-space-card) - 1px); box-shadow: var(--mcr-shadow-md);
 }
 .mcr-package__ribbon {
@@ -783,10 +789,10 @@ body.mcr-scheme-dark .mcr-scope, body.mcr-scheme-dark .mcr-portal {
   transition: color var(--mcr-duration) var(--mcr-ease), border-color var(--mcr-duration) var(--mcr-ease);
 }
 .mcr-scope.mcr-scope .mcr-tabs__tab, .mcr-portal.mcr-portal .mcr-tabs__tab { color: var(--mcr-text-secondary); }
-.mcr-scope.mcr-scope .mcr-tabs__tab:hover, .mcr-portal.mcr-portal .mcr-tabs__tab:hover { color: var(--mcr-accent, var(--primary-color, #eb3349)); }
-.mcr-tabs__tab[aria-selected="true"] { border-block-end-color: var(--mcr-accent, var(--primary-color, #eb3349)); }
+.mcr-scope.mcr-scope .mcr-tabs__tab:hover, .mcr-portal.mcr-portal .mcr-tabs__tab:hover { color: var(--mcr-accent); }
+.mcr-tabs__tab[aria-selected="true"] { border-block-end-color: var(--mcr-accent); }
 .mcr-scope.mcr-scope .mcr-tabs__tab[aria-selected="true"],
-.mcr-portal.mcr-portal .mcr-tabs__tab[aria-selected="true"] { color: var(--mcr-accent, var(--primary-color, #eb3349)); }
+.mcr-portal.mcr-portal .mcr-tabs__tab[aria-selected="true"] { color: var(--mcr-accent); }
 .mcr-tabs__panel { padding-block-start: 20px; }
 .mcr-tabs__panel[hidden] { display: none; }
 
@@ -809,7 +815,7 @@ body.mcr-scheme-dark .mcr-scope, body.mcr-scheme-dark .mcr-portal {
 .mcr-portal.mcr-portal .mcr-pagination__btn:hover {
   background: var(--mcr-brand-hover); border-color: var(--mcr-brand-hover); color: #fff;
 }
-.mcr-pagination__btn[aria-current="page"] { background: var(--mcr-accent, var(--primary-color, #eb3349)); border-color: var(--mcr-accent, var(--primary-color, #eb3349)); }
+.mcr-pagination__btn[aria-current="page"] { background: var(--mcr-accent); border-color: var(--mcr-accent); }
 .mcr-scope.mcr-scope .mcr-pagination__btn[aria-current="page"],
 .mcr-portal.mcr-portal .mcr-pagination__btn[aria-current="page"] { color: #fff; }
 .mcr-pagination__btn[disabled] { opacity: .45; cursor: not-allowed; }
@@ -881,6 +887,24 @@ body.mcr-modal-open { overflow: hidden; }
 .mcr-grid--packages { --mcr-cols: 1; }
 .mcr-grid--quick { --mcr-cols: 1; }
 
+/* Admin-selected column count (appearance.{page}.columns). Applied ONLY to the
+   content grid; it never overrides the responsive recipes above on mobile, and
+   it never touches .mcr-grid--stats (2up/4up is fixed for legibility).
+   Emitted by the template as an extra class: mcr-grid--cols-3 */
+@media (max-width: 768px) {
+  .mcr-grid--cols-2, .mcr-grid--cols-3, .mcr-grid--cols-4 { --mcr-cols: 1; }
+}
+
+@media (min-width: 769px) and (max-width: 991px) {
+  .mcr-grid--cols-2, .mcr-grid--cols-3, .mcr-grid--cols-4 { --mcr-cols: 2; }
+}
+
+@media (min-width: 992px) {
+  .mcr-grid--cols-2 { --mcr-cols: 2; }
+  .mcr-grid--cols-3 { --mcr-cols: 3; }
+  .mcr-grid--cols-4 { --mcr-cols: 4; }
+}
+
 @media (min-width: 768px) {
   .mcr-grid--cards { --mcr-cols: 2; }
   .mcr-grid--quick { --mcr-cols: 3; }
@@ -900,29 +924,6 @@ body.mcr-modal-open { overflow: hidden; }
 @media (min-width: 1200px) {
   .mcr-grid--packages { --mcr-cols: 4; }
   .mcr-gap-lg { --mcr-gap: 30px; }
-}
-
-/* Admin-selected column count (appearance.{page}.columns). Applied ONLY to the
-   content grid; it never touches .mcr-grid--stats (2up/4up is fixed for
-   legibility). Emitted by the template as an extra class: mcr-grid--cols-3.
-
-   These rules come LAST on purpose. The recipes above are the fallback for a
-   grid without an admin class; the administrator's choice is the authority
-   at every width, so it has to win over them - including over the four
-   column package recipe of the 1200px query. A phone still gets a single
-   column: the small screen rule collapses the count whatever was chosen. */
-@media (max-width: 768px) {
-  .mcr-grid--cols-2, .mcr-grid--cols-3, .mcr-grid--cols-4 { --mcr-cols: 1; }
-}
-
-@media (min-width: 769px) and (max-width: 991px) {
-  .mcr-grid--cols-2, .mcr-grid--cols-3, .mcr-grid--cols-4 { --mcr-cols: 2; }
-}
-
-@media (min-width: 992px) {
-  .mcr-grid--cols-2 { --mcr-cols: 2; }
-  .mcr-grid--cols-3 { --mcr-cols: 3; }
-  .mcr-grid--cols-4 { --mcr-cols: 4; }
 }
 
 @media (max-width: 992px) {
@@ -1015,26 +1016,4 @@ body.mcr-modal-open { overflow: hidden; }
   .mcr-toast, .mcr-amount.is-updated .mcr-amount__value { animation: none; }
   .mcr-progress__bar, .mcr-card, .mcr-package, .mcr-btn, .mcr-tabs__tab { transition: none; }
   .mcr-card--interactive:hover, .mcr-package:hover { transform: none; }
-}
-
-/* -------------------------------------------------------------------------
- * Long user supplied text.
- *
- * A transaction reason, a package name or a display name is arbitrary
- * text. Without an overflow rule a single long word pushes the whole
- * page sideways on a narrow screen.
- * ---------------------------------------------------------------------- */
-
-.mcr-scope .mcr-card__body,
-.mcr-scope .mcr-table td,
-.mcr-scope .mcr-table th,
-.mcr-scope .mcr-muted,
-.mcr-scope .mcr-strong,
-.mcr-scope p,
-.mcr-scope li,
-.mcr-admin .mcr-card__body,
-.mcr-admin td,
-.mcr-admin th {
-	overflow-wrap: break-word;
-	word-wrap: break-word;
 }

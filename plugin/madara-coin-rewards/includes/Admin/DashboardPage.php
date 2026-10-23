@@ -166,20 +166,19 @@ class DashboardPage {
 		$ledger   = $wpdb->prefix . 'mcr_transactions';
 		$checkins = $wpdb->prefix . 'mcr_checkins';
 
-		$today = \MCR\Container::instance()->clock()->today_key();
+		$today = gmdate( 'Y-m-d', current_time( 'timestamp', true ) );
 
-		// No WHERE clause, so there is nothing to prepare.
-		$total_users = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$balances}" );
+		$total_users = (int) $wpdb->get_var( $wpdb->prepare(
+			"SELECT COUNT(*) FROM {$balances}"
+		) );
 
-		// No WHERE clause, so there is nothing to prepare.
-		$row = $wpdb->get_row(
+		$row = $wpdb->get_row( $wpdb->prepare(
 			"SELECT
 				COALESCE(SUM(balance), 0) AS total_balance,
 				COALESCE(SUM(lifetime_earned), 0) AS lifetime_earned,
 				COALESCE(SUM(lifetime_spent), 0) AS lifetime_spent
-			FROM {$balances}",
-			\ARRAY_A
-		);
+			FROM {$balances}"
+		), \ARRAY_A );
 
 		$transactions_today = (int) $wpdb->get_var( $wpdb->prepare(
 			"SELECT COUNT(*) FROM {$ledger} WHERE DATE(created_at) = %s",

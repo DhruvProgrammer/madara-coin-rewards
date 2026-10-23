@@ -1,0 +1,586 @@
+/* ==========================================================================
+   MCR BUY COINS - premium storefront
+   --------------------------------------------------------------------------
+   Scoped entirely to `.mcr-page--buy-coins` (and the no-sidebar body class),
+   so nothing here can leak onto another page of the site.
+
+   Layout rules honoured:
+   - mobile-first, single column by default
+   - container is fluid with an explicit max-width, never a fixed px width
+   - grid uses 1fr fractions (auto-fit) so tracks size themselves
+   - interactive targets never drop below the --mcr-tap touch target
+   ========================================================================== */
+
+/* --- 1. FULL-WIDTH PAGE SHELL ------------------------------------------- */
+
+.mcr-no-sidebar .mcr-page--buy-coins { width: 100%; max-width: 100%; }
+
+/* The content column is allowed to use the space the sidebar vacated. */
+.mcr-page--buy-coins .mcr-page__body {
+  width: 100%;
+  max-width: 1280px;
+  margin-inline: auto;
+}
+
+/* Remove any residual theme gutter so the page truly runs full width. */
+.mcr-no-sidebar .mcr-page--buy-coins { padding-inline: 0; }
+
+@media (min-width: 768px) {
+  .mcr-page--buy-coins .mcr-page__body { padding-inline: var(--mcr-gutter, 15px); }
+}
+
+/* --- 1. HERO ------------------------------------------------------------ */
+
+.mcr-page--buy-coins .mcr-buy__hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  margin-block-end: var(--mcr-space-section, 30px);
+  padding: clamp(20px, 4vw, 44px);
+  border-radius: var(--mcr-radius, 5px);
+  border: 1px solid var(--mcr-border);
+  background:
+    linear-gradient(160deg,
+      var(--mcr-bg-surface) 0%,
+      color-mix(in srgb, var(--mcr-coin-100) 55%, var(--mcr-bg-surface)) 100%);
+  box-shadow: var(--mcr-shadow-md);
+}
+
+/* Soft gold bloom behind the artwork. Decorative only. */
+.mcr-buy__hero-glow {
+  position: absolute;
+  z-index: -1;
+  inset-block-start: -30%;
+  inset-inline-end: -12%;
+  inline-size: clamp(200px, 42vw, 420px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--mcr-coin-glow) 0%, transparent 68%);
+  pointer-events: none;
+}
+
+.mcr-buy__hero-inner {
+  display: grid;
+  gap: clamp(16px, 3vw, 32px);
+  align-items: center;
+  /* Mobile first: single column; artwork sits below the copy. */
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 992px) {
+  .mcr-buy__hero-inner {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  }
+}
+
+.mcr-buy__hero-copy { min-inline-size: 0; }
+
+.mcr-buy__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 4px 12px;
+  border-radius: var(--mcr-radius-pill);
+  background: var(--mcr-accent-bg);
+  color: var(--mcr-accent-text);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.mcr-buy__eyebrow-dot {
+  inline-size: 6px;
+  block-size: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.mcr-buy__hero-title {
+  margin: 0 0 8px;
+  /* Fluid display size, clamped so it never wraps awkwardly on mobile. */
+  font-size: clamp(26px, 6vw, 42px);
+  line-height: 1.15;
+  font-weight: 700;
+  color: var(--mcr-text-primary);
+  /* Long translated headings must not force a horizontal scrollbar. */
+  overflow-wrap: break-word;
+}
+
+.mcr-buy__hero-sub {
+  margin: 0 0 16px;
+  max-inline-size: 52ch;
+  color: var(--mcr-text-secondary);
+  font-size: clamp(14px, 1.6vw, 16px);
+  line-height: 1.6;
+}
+
+.mcr-buy__balance {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-block-end: 16px;
+  padding: 10px 16px;
+  border-radius: var(--mcr-radius);
+  background: var(--mcr-bg-surface);
+  border: 1px solid var(--mcr-border-light);
+  box-shadow: var(--mcr-shadow-sm);
+}
+
+.mcr-buy__balance-label {
+  font-size: 13px;
+  color: var(--mcr-text-secondary);
+}
+
+.mcr-buy__hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Full-width stacked buttons on narrow screens - comfortable to tap. */
+@media (max-width: 560px) {
+  .mcr-buy__hero-actions { flex-direction: column; }
+  .mcr-buy__hero-actions .mcr-btn { inline-size: 100%; }
+}
+
+.mcr-buy__hero-note {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--mcr-text-muted);
+}
+
+/* --- 3. HERO COIN ART --------------------------------------------------- */
+
+.mcr-buy__hero-art {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  order: -1;
+}
+
+@media (min-width: 992px) { .mcr-buy__hero-art { order: 0; } }
+
+.mcr-buy__coin-stack {
+  position: relative;
+  inline-size: clamp(120px, 34vw, 200px);
+  aspect-ratio: 1;
+}
+
+/* Gentle float so the stack reads as premium without being distracting. */
+.mcr-buy__coin {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  translate: -50% -50%;
+  animation: mcr-buy-float 6s var(--mcr-ease) infinite;
+}
+
+.mcr-buy__coin--back  { animation-delay: 0s;   opacity: .55; margin-block-start: -34px; margin-inline-start: 26px; }
+.mcr-buy__coin--mid   { animation-delay: .6s;  opacity: .8;  margin-block-start: 4px;   margin-inline-start: -22px; }
+.mcr-buy__coin--front { animation-delay: 1.2s; }
+
+@keyframes mcr-buy-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+
+/* Respect reduced motion: the stack stays put, nothing animates. */
+@media (prefers-reduced-motion: reduce) {
+  .mcr-buy__coin { animation: none; }
+}
+
+/* --- 4. PACKAGE GRID ---------------------------------------------------- */
+
+.mcr-buy__grid {
+  /* auto-fit + minmax keeps tracks flexible: 1 column on mobile,
+     reflowing to 2 on tablet and 3-4 on desktop with no fixed widths. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: clamp(16px, 2.4vw, 24px);
+  align-items: stretch;
+}
+
+.mcr-page--buy-coins .mcr-section--flush { margin-block-end: var(--mcr-space-section-tight, 20px); }
+
+.mcr-buy__state { margin-block-end: var(--mcr-space-section-tight, 20px); }
+
+/* --- 5. PACKAGE CARD (premium variant) ---------------------------------- */
+
+.mcr-package--premium {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: clamp(18px, 3vw, 26px);
+  border: 1px solid var(--mcr-border);
+  border-radius: var(--mcr-radius);
+  background: var(--mcr-bg-surface);
+  box-shadow: var(--mcr-shadow-sm);
+  transition: transform var(--mcr-duration) var(--mcr-ease),
+              box-shadow var(--mcr-duration) var(--mcr-ease),
+              border-color var(--mcr-duration) var(--mcr-ease);
+}
+
+.mcr-package--premium:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--mcr-shadow-md);
+  border-color: color-mix(in srgb, var(--mcr-coin-400) 60%, var(--mcr-border));
+}
+
+/* Recommended package: a gold-tinted edge, not a bigger box, so the other
+   cards never look lesser. */
+.mcr-package--premium.is-featured {
+  border-color: var(--mcr-coin-400);
+  box-shadow: var(--mcr-shadow-md);
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--mcr-coin-100) 45%, var(--mcr-bg-surface)) 0%,
+      var(--mcr-bg-surface) 42%);
+}
+
+.mcr-package__ribbon {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: clamp(14px, 3vw, 22px);
+  translate: 0 -50%;
+  z-index: 2;
+  padding: 4px 12px;
+  border-radius: var(--mcr-radius-pill);
+  background: linear-gradient(135deg, var(--mcr-coin-300), var(--mcr-coin-400));
+  color: var(--mcr-coin-ink);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: var(--mcr-shadow-sm);
+}
+
+.mcr-package--premium.is-featured .mcr-package__name { margin-block-start: 12px; }
+
+.mcr-package--premium .mcr-package__name {
+  margin: 0;
+  font-size: clamp(15px, 2vw, 17px);
+  font-weight: 600;
+  color: var(--mcr-text-primary);
+}
+
+.mcr-package--premium .mcr-package__coins {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+}
+
+.mcr-package--premium .mcr-package__bonus {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: var(--mcr-radius-pill);
+  /* Tinted background + the darker success-text token clears WCAG AA at
+     12px; --mcr-success itself only reached ~3.9:1. */
+  background: var(--mcr-success-bg);
+  color: var(--mcr-success-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mcr-package--premium .mcr-package__price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+  padding-block: 12px;
+  border-block: 1px dashed var(--mcr-border-light);
+}
+
+.mcr-package--premium .mcr-package__price-amount {
+  font-size: clamp(26px, 5vw, 32px);
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--mcr-text-primary);
+}
+
+.mcr-package--premium .mcr-package__price-currency {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mcr-text-secondary);
+}
+
+/* Value line: which package gives the most coins per unit of money. */
+.mcr-package--premium .mcr-package__unit {
+  flex-basis: 100%;
+  font-size: 12px;
+  /* --mcr-text-secondary, not -muted: muted only reaches ~3.5:1 here. */
+  color: var(--mcr-text-secondary);
+}
+
+.mcr-package--premium .mcr-package__features {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  flex: 1 1 auto;
+}
+
+.mcr-package--premium .mcr-package__features li {
+  position: relative;
+  padding-inline-start: 20px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--mcr-text-secondary);
+}
+
+.mcr-package--premium .mcr-package__features li::before {
+  content: "\2713";
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: 0;
+  color: var(--mcr-success);
+  font-weight: 700;
+}
+
+.mcr-package--premium.is-unavailable { opacity: .72; }
+.mcr-package--premium.is-unavailable .mcr-package__features li::before { content: "\2013"; color: var(--mcr-text-muted); }
+
+/* Every CTA keeps a full-width, thumb-sized tap area on mobile. */
+.mcr-package--premium .mcr-btn--block {
+  inline-size: 100%;
+  min-block-size: var(--mcr-tap);
+}
+
+@media (max-width: 560px) {
+  .mcr-package--premium .mcr-btn--block { min-block-size: 48px; }
+}
+
+/* --- 6. FEATURES ("Why buy coins") -------------------------------------- */
+
+.mcr-buy__features {
+  display: grid;
+  gap: clamp(16px, 2.4vw, 24px);
+  /* Single column on mobile, up to three on desktop. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+}
+
+.mcr-buy__feature {
+  padding: clamp(16px, 2.4vw, 22px);
+  border: 1px solid var(--mcr-border);
+  border-radius: var(--mcr-radius);
+  background: var(--mcr-bg-surface);
+  box-shadow: var(--mcr-shadow-sm);
+}
+
+.mcr-buy__feature-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 48px;
+  block-size: 48px;
+  margin-block-end: 12px;
+  border-radius: 50%;
+  background: var(--mcr-accent-bg);
+  color: var(--mcr-accent-text);
+}
+
+.mcr-buy__feature-icon svg { inline-size: 24px; block-size: 24px; }
+
+.mcr-buy__feature-title {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--mcr-text-primary);
+}
+
+.mcr-buy__feature-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--mcr-text-secondary);
+}
+
+/* --- 7. STEPS ("How it works") ------------------------------------------- */
+
+.mcr-buy__steps {
+  display: grid;
+  gap: clamp(14px, 2vw, 20px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: mcr-step;
+}
+
+.mcr-buy__step {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: clamp(14px, 2vw, 20px);
+  border: 1px solid var(--mcr-border);
+  border-radius: var(--mcr-radius);
+  background: var(--mcr-bg-surface);
+}
+
+.mcr-buy__step-num {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  inline-size: 36px;
+  block-size: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--mcr-coin-300), var(--mcr-coin-400));
+  color: var(--mcr-coin-ink);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.mcr-buy__step-title {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--mcr-text-primary);
+}
+
+.mcr-buy__step-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--mcr-text-secondary);
+}
+
+@media (min-width: 992px) {
+  .mcr-buy__steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* --- 8. GATEWAYS ("Secure payments") ------------------------------------- */
+
+.mcr-buy__gateways {
+  display: grid;
+  gap: 14px;
+  margin-block-end: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+}
+
+.mcr-buy__gateway {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px;
+  border: 1px solid var(--mcr-border);
+  border-radius: var(--mcr-radius);
+  background: var(--mcr-bg-surface);
+}
+
+.mcr-buy__gateway-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  inline-size: 40px;
+  block-size: 40px;
+  border-radius: 50%;
+  background: var(--mcr-success-bg);
+  color: var(--mcr-success-text);
+}
+
+.mcr-buy__gateway-icon svg { inline-size: 20px; block-size: 20px; }
+
+.mcr-buy__gateway-title { margin: 0 0 2px; font-size: 14px; font-weight: 600; }
+.mcr-buy__gateway-text  { margin: 0; font-size: 13px; color: var(--mcr-text-secondary); }
+.mcr-buy__secure-note   { margin: 0; font-size: 12px; }
+
+/* --- 9. PURCHASE HISTORY ------------------------------------------------ */
+
+.mcr-buy__orders { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+
+.mcr-buy__order {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--mcr-border-light);
+  border-radius: var(--mcr-radius);
+  background: var(--mcr-bg-subtle);
+}
+
+.mcr-buy__order-main { display: flex; flex-direction: column; min-inline-size: 0; }
+.mcr-buy__order-title { font-size: 14px; font-weight: 600; color: var(--mcr-text-primary); }
+.mcr-buy__order-date  { font-size: 12px; color: var(--mcr-text-secondary); }
+
+/* --- 10. FAQ (collapsible) ----------------------------------------------- */
+
+.mcr-buy__faq { display: grid; gap: 2px; padding: 0; }
+
+.mcr-buy__faq-item { border-block-end: 1px solid var(--mcr-border-light); }
+.mcr-buy__faq-item:last-child { border-block-end: 0; }
+
+.mcr-buy__faq-q {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 4px;
+  min-block-size: var(--mcr-tap);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mcr-text-primary);
+  cursor: pointer;
+  list-style: none;
+}
+
+.mcr-buy__faq-q::-webkit-details-marker { display: none; }
+
+/* Chevron drawn in CSS so it rotates on open without extra markup. */
+.mcr-buy__faq-icon {
+  flex: 0 0 auto;
+  inline-size: 10px;
+  block-size: 10px;
+  border-inline-end: 2px solid var(--mcr-text-muted);
+  border-block-end: 2px solid var(--mcr-text-muted);
+  rotate: 45deg;
+  transition: rotate var(--mcr-duration) var(--mcr-ease);
+}
+
+.mcr-buy__faq-item[open] .mcr-buy__faq-icon { rotate: -135deg; }
+
+.mcr-buy__faq-a { padding: 0 4px 14px; }
+
+/* --- 11. HELP ----------------------------------------------------------- */
+
+.mcr-buy__help {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: clamp(16px, 3vw, 24px);
+  border: 1px solid var(--mcr-border);
+  border-radius: var(--mcr-radius);
+  background: var(--mcr-bg-surface);
+  box-shadow: var(--mcr-shadow-sm);
+}
+
+.mcr-buy__help-title { margin: 0 0 4px; font-size: 17px; font-weight: 600; color: var(--mcr-text-primary); }
+
+@media (max-width: 560px) {
+  .mcr-buy__help { flex-direction: column; align-items: stretch; }
+  .mcr-buy__help .mcr-btn { inline-size: 100%; }
+}
+
+/* --- 12. COARSE POINTERS ------------------------------------------------ */
+
+@media (hover: none), (pointer: coarse) {
+  .mcr-page--buy-coins .mcr-btn,
+  .mcr-page--buy-coins .mcr-package .mcr-btn { min-block-size: 48px; }
+  .mcr-package--premium:hover { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mcr-package--premium,
+  .mcr-buy__faq-icon { transition: none; }
+}

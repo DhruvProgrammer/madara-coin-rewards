@@ -59,6 +59,12 @@ class PackagesPage {
 					<?php
 					settings_fields( 'mcr_settings_group' );
 					do_settings_fields( 'mcr-packages', 'mcr_section_packages' );
+					/*
+					 * Without this the form has no submit control, so the
+					 * textarea could never be posted and packages could never
+					 * be saved from this screen.
+					 */
+					submit_button( __( 'Save Packages', 'madara-coin-rewards' ) );
 					?>
 				</form>
 			</div>

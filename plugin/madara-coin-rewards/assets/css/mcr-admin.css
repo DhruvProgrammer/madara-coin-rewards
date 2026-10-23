@@ -211,17 +211,14 @@
 	border-color: #eb3349;
 }
 
-/*
- * The stylesheet is only enqueued on the plugin's own screens, so the
- * elements it styles never appear anywhere else and cannot leak.
- *
- * There used to be a rule here that hid these elements whenever the
- * <body> did not carry the "mcr-admin" class. That class is added by
- * the admin_body_class filter, and while the filter was missing the
- * rule hid EVERY table, card and filter on the plugin's own screens:
- * the dashboard showed its headings and nothing else, and the packages
- * screen could not be edited at all. The rule is gone.
- */
+/* Ensure our scoped elements never leak to the theme's own pages. */
+body:not(.mcr-admin) .mcr-admin-card,
+body:not(.mcr-admin) .mcr-admin-stat-card,
+body:not(.mcr-admin) .mcr-admin-table,
+body:not(.mcr-admin) .mcr-admin-filters,
+body:not(.mcr-admin) .mcr-admin-tablenav {
+	display: none;
+}
 
 /* Dark mode awareness (theme toggles body.text-ui-dark). */
 body.text-ui-dark .mcr-admin-card,

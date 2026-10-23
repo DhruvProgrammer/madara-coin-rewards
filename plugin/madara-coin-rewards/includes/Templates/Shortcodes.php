@@ -191,134 +191,16 @@ class Shortcodes {
 
 		$streak = isset( $status['streak'] ) ? (int) $status['streak'] : 0;
 
-		/*
-		 * The ad panel lives on the check-in page, so the ad data is
-		 * prepared here as well. It is the same data the standalone ads
-		 * page uses, which keeps the two in step.
-		 */
-		/*
-		 * The lifetime ad aggregates are not shown on this page, so they
-		 * are not computed either.
-		 */
-		$ads = $this->ads_stats( $user_id, false );
-		$next = $this->next_bonus( $streak, $bonuses );
-
-		/*
-		 * "Earned today" is what the LEDGER credited today. It is not
-		 * built from the check-in amount and the ad count, because a
-		 * purchase, a bonus or an adjustment made today all count.
-		 */
-		$today_earned = Ledger::instance()->earned_today( $user_id );
-
 		return array(
 			'status'        => $status,
 			'bonuses'       => $bonuses,
 			'enabled'       => Settings::featureEnabled( 'checkin' ) && ! empty( $status['enabled'] ),
 			'deadline'      => Templates::deadline( isset( $status['next_in'] ) ? (int) $status['next_in'] : 0 ),
 			'streak'        => $streak,
-			'next_bonus'    => $next,
+			'next_bonus'    => $this->next_bonus( $streak, $bonuses ),
 			'timezone'      => function_exists( 'wp_timezone_string' ) ? wp_timezone_string() : 'UTC',
 			'claimable'     => empty( $status['claimed_today'] ) && ! empty( $status['base_claimable'] ),
-
-			// The wallet header.
-			'stats'         => $this->ledger_stats( $user_id ),
-			'profile'       => $this->profile( $user_id ),
-			'today_earned'  => $today_earned,
-
-			// The recent activity list.
-			'recent'        => $this->ledger_rows( $user_id, 5 ),
-
-			// The ad panel.
-			'ads'           => $ads,
-			'ads_enabled'   => Settings::featureEnabled( 'ads' ),
-			'ads_configured' => $this->ads_configured(),
-			'ad_units'      => $this->ad_units(),
-			'ads_cooldown'  => (int) Settings::get( 'ads.cooldown_seconds', 300 ),
-			'ads_reset'     => Templates::deadline( $this->seconds_until_next_day() ),
 		);
-	}
-
-	/**
-	 * Returns the signed-in user's display name and avatar.
-	 *
-	 * The wallet header shows a profile summary, so it needs something
-	 * friendlier than a user id. Everything is optional: the header
-	 * degrades to a generic label when there is no user.
-	 *
-	 * @param int $user_id User id.
-	 * @return array
-	 */
-	private function profile( $user_id ) {
-		$profile = array(
-			'name'     => '',
-			'avatar'   => '',
-			'initials' => '',
-		);
-
-		$user_id = absint( $user_id );
-
-		if ( ! $user_id || ! function_exists( 'get_userdata' ) ) {
-			return $profile;
-		}
-
-		$user = get_userdata( $user_id );
-
-		if ( ! $user ) {
-			return $profile;
-		}
-
-		/*
-		 * A user with no display name, or with a name that is only
-		 * whitespace, falls back to the login name.
-		 */
-		$display_name = isset( $user->display_name ) ? trim( (string) $user->display_name ) : '';
-		$login_name   = isset( $user->user_login ) ? trim( (string) $user->user_login ) : '';
-
-		$profile['name'] = '' !== $display_name ? $display_name : $login_name;
-
-		if ( function_exists( 'get_avatar_url' ) ) {
-			$avatar = get_avatar_url( $user_id, 112 );
-
-			$profile['avatar'] = $avatar ? (string) $avatar : '';
-		}
-
-		if ( '' !== $profile['name'] ) {
-			$cut = function_exists( 'mb_substr' )
-				? function ( $text, $length ) {
-					return mb_substr( $text, 0, $length, 'UTF-8' );
-				}
-				: function ( $text, $length ) {
-					return substr( $text, 0, $length );
-				};
-
-			$words = preg_split( '/\s+/u', $profile['name'], -1, PREG_SPLIT_NO_EMPTY );
-			$words = is_array( $words ) ? $words : array();
-
-			/*
-			 * One initial per word, for at most two words. The length is
-			 * counted in CHARACTERS, not bytes: "Ödipus Rex" is two
-			 * initials, and a byte count would stop after the first one.
-			 */
-			$initials = '';
-
-			foreach ( $words as $index => $word ) {
-				if ( $index >= 2 ) {
-					break;
-				}
-
-				$char = $cut( $word, 1 );
-
-				if ( '' === $char ) {
-					continue;
-				}
-
-				$initials .= $char;
-			}
-
-			$profile['initials'] = strtoupper( $initials );
-		}
-
-		return $profile;
 	}
 
 	/**
@@ -422,6 +304,8 @@ class Shortcodes {
 			'packages'         => $this->packages(),
 			'stats'            => $this->ledger_stats( $user_id ),
 			'gateway_available' => $this->gateway_available(),
+			'gateways'         => $this->gateway_details(),
+			'support_url'      => $this->support_url(),
 			'currency'         => (string) Settings::get( 'purchase.currency', 'USD' ),
 			'orders'           => $orders,
 			'pending_order'    => $pending,
@@ -429,6 +313,82 @@ class Shortcodes {
 			'enabled'          => Settings::featureEnabled( 'purchase' ),
 			'urls'             => Templates::urls(),
 		);
+	}
+
+	/**
+	 * Returns the configured gateway's own title and description.
+	 *
+	 * The storefront must only describe payment methods the site really has
+	 * enabled, so this reads the live gateway object rather than a static
+	 * list of everything the plugin ships with. Returns an empty array when
+	 * no gateway is configured or available.
+	 *
+	 * @return array List of [ 'id', 'title', 'description' ].
+	 */
+	private function gateway_details() {
+		if ( ! Settings::featureEnabled( 'purchase' ) ) {
+			return array();
+		}
+
+		$gateway_id = (string) Settings::get( 'purchase.gateway', '' );
+
+		if ( '' === $gateway_id || ! class_exists( '\MCR\Gateways\Registry' ) ) {
+			return array();
+		}
+
+		try {
+			$gateway = \MCR\Gateways\Registry::get( $gateway_id );
+		} catch ( \Throwable $e ) {
+			return array();
+		}
+
+		if ( ! is_object( $gateway ) ) {
+			return array();
+		}
+
+		if ( method_exists( $gateway, 'is_available' ) && ! $gateway->is_available() ) {
+			return array();
+		}
+
+		return array(
+			array(
+				'id'          => $gateway_id,
+				'title'       => method_exists( $gateway, 'get_title' ) ? (string) $gateway->get_title() : '',
+				'description' => method_exists( $gateway, 'get_description' ) ? (string) $gateway->get_description() : '',
+			),
+		);
+	}
+
+	/**
+	 * Returns the site's support URL, if one is configured.
+	 *
+	 * Respects the site's own support configuration when the theme provides
+	 * one. An empty string means the storefront omits the help block rather
+	 * than inventing a contact address.
+	 *
+	 * @return string
+	 */
+	private function support_url() {
+		$configured = (string) Settings::get( 'purchase.support_url', '' );
+
+		if ( '' !== $configured ) {
+			return $configured;
+		}
+
+		// Madara exposes its own support page option.
+		if ( class_exists( '\App\Madara' ) ) {
+			$page = \App\Madara::getOption( 'support_page', '' );
+
+			if ( is_numeric( $page ) && (int) $page > 0 ) {
+				$link = get_permalink( (int) $page );
+
+				if ( is_string( $link ) && '' !== $link ) {
+					return $link;
+				}
+			}
+		}
+
+		return '';
 	}
 
 	/**
@@ -440,26 +400,20 @@ class Shortcodes {
 	private function transactions_args( $user_id ) {
 		$per_page = 20;
 		$page     = isset( $_GET['mcr_page'] ) ? max( 1, absint( wp_unslash( $_GET['mcr_page'] ) ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$offset   = min( 10000, ( $page - 1 ) * $per_page );
+		$offset   = ( $page - 1 ) * $per_page;
 
-		$rows = $this->ledger_rows( $user_id, $per_page + 1, $offset );
-
-		$has_more = is_array( $rows ) && count( $rows ) > $per_page;
-
-		if ( is_array( $rows ) ) {
-			$rows = array_slice( $rows, 0, $per_page );
-		}
-
+		$rows  = $this->ledger_rows( $user_id, $per_page, $offset );
+		$total = $this->ledger_total( $user_id );
 		$shown = $offset + count( $rows );
 
-		$next_page = $has_more ? $page + 1 : 0;
+		$next_page = $shown < $total ? $page + 1 : 0;
 
 		$base_url = Templates::current_url();
 
 		return array(
 			'rows'      => $rows,
-			'total'     => $shown,
-			'shown'     => $shown,
+			'total'     => $total,
+			'shown'     => min( $shown, $total ),
 			'page'      => $page,
 			'per_page'  => $per_page,
 			'has_more'  => $next_page > 0,
@@ -504,9 +458,7 @@ class Shortcodes {
 			'bonus_amount'  => 0,
 			'total_amount'  => (int) Settings::get( 'checkin.base_amount', 10 ),
 			'next_in'       => $this->seconds_until_next_day(),
-			'today_key'     => class_exists( '\\MCR\\Container' )
-				? \MCR\Container::instance()->clock()->today_key()
-				: '',
+			'today_key'     => gmdate( 'Y-m-d' ),
 			'calendar'      => array(),
 			'enabled'       => Settings::featureEnabled( 'checkin' ),
 			'base_claimable' => true,
@@ -550,7 +502,7 @@ class Shortcodes {
 	 * @param int $user_id User id.
 	 * @return array
 	 */
-	private function ads_stats( $user_id, $include_lifetime = true ) {
+	private function ads_stats( $user_id ) {
 		$limit = (int) Settings::get( 'ads.daily_limit', 10 );
 
 		$defaults = array(
@@ -566,7 +518,7 @@ class Shortcodes {
 			return $defaults;
 		}
 
-		$stats = AdSessions::instance()->stats( $user_id, $include_lifetime );
+		$stats = AdSessions::instance()->stats( $user_id );
 
 		return is_array( $stats ) ? array_merge( $defaults, $stats ) : $defaults;
 	}
@@ -634,18 +586,9 @@ class Shortcodes {
 
 			$normalized[] = array(
 				'id'      => $id,
-				/*
-				 * The name is read from "label", "name" and "title",
-				 * which is what the provider contract documents. Without
-				 * "title" the reader saw the internal placement id.
-				 */
 				'label'   => isset( $unit['label'] ) && '' !== (string) $unit['label']
 					? (string) $unit['label']
-					: ( isset( $unit['name'] ) && '' !== (string) $unit['name']
-						? (string) $unit['name']
-						: ( isset( $unit['title'] ) && '' !== (string) $unit['title']
-							? (string) $unit['title']
-							: $id ) ),
+					: ( isset( $unit['name'] ) ? (string) $unit['name'] : $id ),
 				'placement' => isset( $unit['placement'] ) ? sanitize_key( (string) $unit['placement'] ) : '',
 			);
 		}
@@ -696,37 +639,31 @@ class Shortcodes {
 	 * @return array
 	 */
 	private function packages() {
-		$packages = array();
-
-		if ( class_exists( '\MCR\Payments\Packages' ) && method_exists( '\MCR\Payments\Packages', 'get_active' ) ) {
-			$active = \MCR\Payments\Packages::get_active();
-
-			if ( is_array( $active ) ) {
-				$packages = $active;
-			}
-		} else {
-			$stored = Settings::get( 'packages', array() );
-
-			foreach ( (array) $stored as $key => $package ) {
-				if ( ! is_array( $package ) ) {
-					continue;
-				}
-
-				if ( isset( $package['active'] ) && 'on' !== $package['active'] && true !== $package['active'] ) {
-					continue;
-				}
-
-				$package['id'] = isset( $package['id'] ) && '' !== (string) $package['id']
-					? (string) $package['id']
-					: sanitize_key( (string) $key );
-
-				$packages[] = $package;
-			}
+		/*
+		 * Packages::get_active() already returns fully normalized packages:
+		 * coins_total, price_minor, max_bonus, active, limit and purchased are
+		 * all present. Re-normalizing here used to rebuild the array from a
+		 * fixed key list that omitted price_minor/limit/purchased, so
+		 * Packages::is_purchasable() then always saw a zero price and the
+		 * storefront could never offer a package for sale.
+		 *
+		 * We therefore pass the normalized rows straight through and only
+		 * apply the display defaults the templates still expect.
+		 */
+		if ( ! class_exists( '\MCR\Payments\Packages' ) || ! method_exists( '\MCR\Payments\Packages', 'get_active' ) ) {
+			return array();
 		}
 
-		$normalized = array();
+		$active = \MCR\Payments\Packages::get_active();
 
-		foreach ( $packages as $package ) {
+		if ( ! is_array( $active ) ) {
+			return array();
+		}
+
+		$default_currency = (string) Settings::get( 'purchase.currency', 'USD' );
+		$normalized       = array();
+
+		foreach ( $active as $package ) {
 			if ( ! is_array( $package ) ) {
 				continue;
 			}
@@ -737,39 +674,17 @@ class Shortcodes {
 				continue;
 			}
 
-			$coins         = isset( $package['coins'] ) ? max( 0, (int) $package['coins'] ) : 0;
-			$bonus_percent = isset( $package['bonus_percent'] ) ? max( 0, min( 100, (int) $package['bonus_percent'] ) ) : 0;
-			$coins_total   = isset( $package['coins_total'] )
-				? (int) $package['coins_total']
-				: PackageCalculator::calculateTotal( $coins, $bonus_percent );
+			// Display defaults only; every derived value is preserved.
+			$package['id']       = $id;
+			$package['title']    = isset( $package['title'] ) && '' !== (string) $package['title']
+				? (string) $package['title']
+				: __( 'Coin package', 'madara-coin-rewards' );
+			$package['currency'] = isset( $package['currency'] ) && '' !== (string) $package['currency']
+				? strtoupper( (string) $package['currency'] )
+				: $default_currency;
 
-			$normalized[] = array(
-				'id'            => $id,
-				'title'         => isset( $package['title'] ) && '' !== (string) $package['title']
-					? (string) $package['title']
-					: __( 'Coin package', 'madara-coin-rewards' ),
-				'coins'         => $coins,
-				'bonus_percent' => $bonus_percent,
-				'coins_total'   => $coins_total,
-				'price'         => isset( $package['price'] ) ? (float) $package['price'] : 0.0,
-				'currency'      => isset( $package['currency'] ) && '' !== (string) $package['currency']
-					? strtoupper( (string) $package['currency'] )
-					: (string) Settings::get( 'purchase.currency', 'USD' ),
-				'badge'         => isset( $package['badge'] ) ? (string) $package['badge'] : '',
-				'sort_order'    => isset( $package['sort_order'] ) ? (int) $package['sort_order'] : 0,
-			);
+			$normalized[] = $package;
 		}
-
-		usort(
-			$normalized,
-			function ( $a, $b ) {
-				if ( $a['sort_order'] === $b['sort_order'] ) {
-					return $a['coins'] <=> $b['coins'];
-				}
-
-				return $a['sort_order'] <=> $b['sort_order'];
-			}
-		);
 
 		return $normalized;
 	}
@@ -825,7 +740,7 @@ class Shortcodes {
 			return array();
 		}
 
-		$rows = Ledger::instance()->list_for_user( $user_id, $limit, 0, 'ad_reward' );
+		$rows = Ledger::instance()->list_for_user( $user_id, 100, 0 );
 
 		if ( ! is_array( $rows ) ) {
 			return array();
@@ -834,6 +749,10 @@ class Shortcodes {
 		$out = array();
 
 		foreach ( $rows as $row ) {
+			if ( ! isset( $row->type ) || 'ad_reward' !== $row->type ) {
+				continue;
+			}
+
 			$out[] = $this->format_transaction( $row );
 
 			if ( count( $out ) >= $limit ) {
@@ -971,10 +890,6 @@ class Shortcodes {
 			return (int) \MCR\Container::instance()->clock()->seconds_until_next_day();
 		}
 
-		if ( class_exists( '\\MCR\\Container' ) ) {
-			return (int) \MCR\Container::instance()->clock()->seconds_until_next_day();
-		}
-
-		return 0;
+		return max( 0, strtotime( 'tomorrow midnight' ) - time() );
 	}
 }

@@ -42,7 +42,7 @@ $checked  = 0;
 $bytes    = 0;
 
 foreach ( $files as $path ) {
-	$rel    = str_replace( '\\', '/', str_replace( $root . DIRECTORY_SEPARATOR, '', $path ) );
+	$rel    = str_replace( $root . DIRECTORY_SEPARATOR, '', $path );
 	$source = file_get_contents( $path );
 
 	if ( false === $source ) {

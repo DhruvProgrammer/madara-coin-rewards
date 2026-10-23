@@ -64,53 +64,8 @@ class Cron {
 	 *
 	 * @return void
 	 */
-	/**
-	 * Removes the ad sessions that can no longer matter.
-	 *
-	 * The table grows forever otherwise, and the site-wide cap counts
-	 * over it on every ad start. Two days are kept so the rolling
-	 * 24 hour cap and the site-timezone daily cap stay correct.
-	 *
-	 * @return void
-	 */
-	public static function prune_ad_sessions() {
-		global $wpdb;
-
-		$table = $wpdb->prefix . 'mcr_ad_sessions';
-
-		$wpdb->query(
-			$wpdb->prepare(
-				"DELETE FROM {$table}
-				 WHERE verified_at < %s
-				   AND status IN ( 'expired', 'credited', 'verified' )", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				gmdate( 'Y-m-d H:i:s', time() - ( 2 * \DAY_IN_SECONDS ) )
-			)
-		);
-
-		$wpdb->query(
-			$wpdb->prepare(
-				"DELETE FROM {$table}
-				 WHERE status = 'pending'
-				   AND expires_at < %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				gmdate( 'Y-m-d H:i:s', time() - \DAY_IN_SECONDS )
-			)
-		);
-	}
-
-	/**
-	 * Runs the daily maintenance.
-	 *
-	 * @return void
-	 */
 	public static function run_daily() {
 		$expired = Payments\Orders::instance()->expireStale();
-
-		/*
-		 * The ad sessions are pruned here, so the table cannot grow
-		 * without bound and the site-wide cap keeps counting over a
-		 * bounded set of rows.
-		 */
-		self::prune_ad_sessions();
 
 		/**
 		 * Fires during the plugin's daily maintenance.
@@ -134,7 +89,7 @@ class Cron {
 		// a session hours later.
 		$wpdb->query(
 			$wpdb->prepare(
-				"UPDATE {$table} SET status = 'expired' WHERE status = 'pending' AND expires_at < %s LIMIT 100", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"UPDATE {$table} SET status = 'expired' WHERE status = 'pending' AND expires_at < %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				gmdate( 'Y-m-d H:i:s' )
 			)
 		);

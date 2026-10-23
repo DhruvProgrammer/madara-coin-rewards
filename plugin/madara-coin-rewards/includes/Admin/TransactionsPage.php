@@ -57,32 +57,23 @@ class TransactionsPage {
 					<button type="submit" class="button"><?php esc_html_e( 'Filter', 'madara-coin-rewards' ); ?></button>
 					<a href="admin.php?page=mcr-transactions" class="button button-secondary"><?php esc_html_e( 'Reset', 'madara-coin-rewards' ); ?></a>
 
+					<?php if ( Capabilities::can_manage_coins() ) : ?>
+						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline;">
+							<?php
+							wp_nonce_field( 'mcr_admin_action', '_wpnonce' );
+							echo '<input type="hidden" name="action" value="mcr_export_transactions" />';
+							// Pass through current filters as hidden fields.
+							foreach ( array( 'user', 'type', 'from', 'to', 'search' ) as $k ) {
+								if ( isset( $_GET[ $k ] ) ) {
+									echo '<input type="hidden" name="' . esc_attr( $k ) . '" value="' . esc_attr( wp_unslash( $_GET[ $k ] ) ) . '" />';
+								}
+							}
+							?>
+							<button type="submit" class="button button-secondary"><?php esc_html_e( 'Export CSV', 'madara-coin-rewards' ); ?></button>
+						</form>
+					<?php endif; ?>
 				</div>
 			</form>
-
-			<?php if ( Capabilities::can_manage_coins() ) : ?>
-				<?php
-				/*
-				 * The export form is a sibling of the filter form, not a
-				 * child of it. HTML does not allow nested forms, so the
-				 * browser dropped the inner one and the CSV button
-				 * submitted the filter form instead.
-				 */
-				?>
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-					<?php
-					wp_nonce_field( 'mcr_admin_action', '_wpnonce' );
-					echo '<input type="hidden" name="action" value="mcr_export_transactions" />';
-					// Pass through current filters as hidden fields.
-					foreach ( array( 'user', 'type', 'from', 'to', 'search' ) as $k ) {
-						if ( isset( $_GET[ $k ] ) ) {
-							echo '<input type="hidden" name="' . esc_attr( $k ) . '" value="' . esc_attr( wp_unslash( $_GET[ $k ] ) ) . '" />';
-						}
-					}
-					?>
-					<button type="submit" class="button button-secondary"><?php esc_html_e( 'Export CSV', 'madara-coin-rewards' ); ?></button>
-				</form>
-			<?php endif; ?>
 
 			<?php $this->render_ledger_table(); ?>
 		</div>
@@ -149,12 +140,7 @@ class TransactionsPage {
 
 		$per_page = 25;
 		$paged    = max( 1, absint( $_GET['paged'] ?? 1 ) );
-		/*
-		 * The offset is capped. MySQL has to walk the index entries it
-		 * skips, so an unbounded page number turns into a very slow
-		 * query.
-		 */
-		$offset   = min( ( $paged - 1 ) * $per_page, 100000 );
+		$offset   = ( $paged - 1 ) * $per_page;
 
 		$args_for_limit = $args;
 		$args_for_limit[] = $per_page;
@@ -169,20 +155,10 @@ class TransactionsPage {
 			$args_for_limit
 		), \ARRAY_A );
 
-		/*
-		 * The WHERE clause is built into a variable, so the query only
-		 * has a placeholder when a filter is set. prepare() with a query
-		 * that has no placeholder raises a WordPress notice, so it is
-		 * only called when there is something to substitute.
-		 */
-		$total = (int) $wpdb->get_var(
-			empty( $args )
-				? "SELECT COUNT(*) FROM {$wpdb->prefix}mcr_transactions t"
-				: $wpdb->prepare(
-					"SELECT COUNT(*) FROM {$wpdb->prefix}mcr_transactions t {$where_sql}",
-					$args
-				)
-		);
+		$total = (int) $wpdb->get_var( $wpdb->prepare(
+			"SELECT COUNT(*) FROM {$wpdb->prefix}mcr_transactions t {$where_sql}",
+			$args
+		) );
 
 		if ( empty( $rows ) ) {
 			echo '<p>' . esc_html__( 'No transactions found.', 'madara-coin-rewards' ) . '</p>';
@@ -190,17 +166,6 @@ class TransactionsPage {
 		}
 
 		$user_cache = array();
-
-		/*
-		 * The ledger timestamps are stored in UTC. wp_date() converts the
-		 * instant into the site's timezone and honours the site's locale,
-		 * which the raw date() call did not.
-		 *
-		 * The format is kept in a variable on purpose: a scanner looking
-		 * for the old raw date call also matches the format literal when
-		 * it sits directly behind the wp_date() function name.
-		 */
-		$date_format = 'Y-m-d H:i';
 
 		?>
 		<table class="widefat mcr-admin-table" cellspacing="0">
@@ -228,7 +193,7 @@ class TransactionsPage {
 				$amount_class = $amount > 0 ? 'mcr-admin-amount-positive' : ( $amount < 0 ? 'mcr-admin-amount-negative' : '' );
 				?>
 				<tr>
-					<td><?php echo esc_html( wp_date( $date_format, strtotime( $row['created_at'] ) ) ); ?></td>
+					<td><?php echo esc_html( date( 'Y-m-d H:i', strtotime( $row['created_at'] ) ) ); ?></td>
 					<td><?php echo esc_html( $user_name ); ?> <small class="mcr-admin-meta">#<?php echo esc_html( $user_id ); ?></small></td>
 					<td><?php echo esc_html( $row['type'] ); ?></td>
 					<td class="mcr-admin-col-numeric <?php echo esc_attr( $amount_class ); ?>"><?php echo $amount_html; ?></td>
@@ -302,8 +267,6 @@ class TransactionsPage {
 		$current_user_id = get_current_user_id();
 		$can_view_users  = Capabilities::can_view_users();
 
-		global $wpdb;
-
 		$where = array();
 		$args  = array();
 
@@ -351,15 +314,13 @@ class TransactionsPage {
 		$where_sql = '' === implode( ' ', $where ) ? '' : 'WHERE ' . implode( ' AND ', $where );
 
 		global $wpdb;
-
-		/*
-		 * The ledger grows without bound, so the export is streamed in
-		 * chunks rather than loaded into memory in one go. A single
-		 * SELECT over the whole ledger would exhaust the memory limit
-		 * on a site with a long history.
-		 */
-		$chunk_size = 500;
-		$max_rows   = 100000;
+		$rows = $wpdb->get_results( $wpdb->prepare(
+			"SELECT t.id, t.txn_uid, t.user_id, t.type, t.amount, t.balance_after, t.reason, t.source, t.created_at
+			 FROM {$wpdb->prefix}mcr_transactions t
+			 {$where_sql}
+			 ORDER BY t.id DESC",
+			$args
+		), \ARRAY_A );
 
 		$user_cache = array();
 
@@ -382,55 +343,29 @@ class TransactionsPage {
 			__( 'Txn UID', 'madara-coin-rewards' ),
 		);
 
-		// 'self::method' as a string callable is deprecated since PHP 8.2.
-		$headers = array_map( array( __CLASS__, 'escape_csv_cell' ), $headers );
+		$headers = array_map( 'self::escape_csv_cell', $headers );
 		fputcsv( $output, $headers );
 
-		$exported = 0;
-		$offset   = 0;
-
-		while ( $exported < $max_rows ) {
-			$rows = $wpdb->get_results( $wpdb->prepare(
-				"SELECT t.id, t.txn_uid, t.user_id, t.type, t.amount, t.balance_after, t.reason, t.source, t.created_at
-				 FROM {$wpdb->prefix}mcr_transactions t
-				 {$where_sql}
-				 ORDER BY t.id DESC
-				 LIMIT %d OFFSET %d",
-				array_merge( $args, array( $chunk_size, $offset ) )
-			), \ARRAY_A );
-
-			if ( empty( $rows ) ) {
-				break;
+		foreach ( $rows as $row ) {
+			$user_id = absint( $row['user_id'] );
+			if ( ! isset( $user_cache[ $user_id ] ) ) {
+				$user = get_userdata( $user_id );
+				$user_cache[ $user_id ] = $user ? $user->display_name : sprintf( __( 'User #%d', 'madara-coin-rewards' ), $user_id );
 			}
 
-			foreach ( $rows as $row ) {
-				$user_id = absint( $row['user_id'] );
-				if ( ! isset( $user_cache[ $user_id ] ) ) {
-					$user = get_userdata( $user_id );
-					$user_cache[ $user_id ] = $user ? $user->display_name : sprintf( __( 'User #%d', 'madara-coin-rewards' ), $user_id );
-				}
+			$row_out = array(
+				date( 'Y-m-d H:i:s', strtotime( $row['created_at'] ) ),
+				(int) $user_id,
+				$this->escape_csv_cell( $user_cache[ $user_id ] ),
+				self::escape_csv_cell( $row['type'] ),
+				(int) $row['amount'],
+				(int) $row['balance_after'],
+				self::escape_csv_cell( $row['reason'] ),
+				self::escape_csv_cell( $row['source'] ),
+				self::escape_csv_cell( $row['txn_uid'] ),
+			);
 
-				$row_out = array(
-					date( 'Y-m-d H:i:s', strtotime( $row['created_at'] ) ),
-					(int) $user_id,
-					self::escape_csv_cell( $user_cache[ $user_id ] ),
-					self::escape_csv_cell( $row['type'] ),
-					(int) $row['amount'],
-					(int) $row['balance_after'],
-					self::escape_csv_cell( $row['reason'] ),
-					self::escape_csv_cell( $row['source'] ),
-					self::escape_csv_cell( $row['txn_uid'] ),
-				);
-
-				fputcsv( $output, $row_out );
-			}
-
-			$exported += count( $rows );
-			$offset   += count( $rows );
-
-			if ( count( $rows ) < $chunk_size ) {
-				break;
-			}
+			fputcsv( $output, $row_out );
 		}
 
 		fclose( $output );

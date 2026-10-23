@@ -321,60 +321,6 @@
 		return item;
 	}
 
-	/*
-	 * A short, tasteful celebration burst when a reward is credited.
-	 * It is decorative only: it never blocks, never moves focus and is
-	 * skipped entirely when the reader prefers reduced motion.
-	 */
-	function celebrate( origin ) {
-		if ( ! origin || ! origin.getBoundingClientRect ) {
-			return;
-		}
-
-		if ( window.matchMedia && window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches ) {
-			return;
-		}
-
-		var rect = origin.getBoundingClientRect();
-		var cx = rect.left + rect.width / 2;
-		var cy = rect.top + rect.height / 2;
-		var layer = document.createElement( 'div' );
-		layer.className = 'mcr-scope mcr-celebration';
-		layer.setAttribute( 'aria-hidden', 'true' );
-		layer.style.position = 'fixed';
-		layer.style.left = '0';
-		layer.style.top = '0';
-		layer.style.width = '0';
-		layer.style.height = '0';
-		layer.style.pointerEvents = 'none';
-		layer.style.zIndex = '100300';
-		document.body.appendChild( layer );
-
-		var colors = [ '#ffd900', '#f2b705', '#eb3349', '#75b22d' ];
-		var count = 14;
-
-		for ( var i = 0; i < count; i++ ) {
-			var spark = document.createElement( 'span' );
-			spark.className = 'mcr-celebration__spark';
-			var angle = ( i / count ) * Math.PI * 2;
-			var distance = 40 + Math.random() * 36;
-			var dx = Math.cos( angle ) * distance;
-			var dy = Math.sin( angle ) * distance - 30;
-			spark.style.left = cx + 'px';
-			spark.style.top = cy + 'px';
-			spark.style.background = colors[ i % colors.length ];
-			spark.style.setProperty( '--mcr-dx', dx + 'px' );
-			spark.style.setProperty( '--mcr-dy', dy + 'px' );
-			layer.appendChild( spark );
-		}
-
-		window.setTimeout( function () {
-			if ( layer.parentNode ) {
-				layer.parentNode.removeChild( layer );
-			}
-		}, 900 );
-	}
-
 	function newestToast() {
 		var container = state.toasts || document.querySelector( '.mcr-toasts' );
 
@@ -897,7 +843,6 @@
 				}
 
 				toast( format( str( 'added' ) || '+%s coins added.', number( coins ) ), 'success' );
-				celebrate( button );
 
 				if ( response && response.message ) {
 					alertBox( target, 'success', '', String( response.message ) );
@@ -1355,28 +1300,12 @@
 		return row;
 	}
 
-	/**
-	 * Writes the pagination status of one table.
-	 *
-	 * The status element is returned so the caller can move the focus to it
-	 * when the button it belongs to disappears: the live region is then both
-	 * announced and focused, and a keyboard user is not dropped on <body>.
-	 *
-	 * @param {Element} scope Container of the table, so a page that renders the
-	 *                       plugin twice updates its own status.
-	 * @param {string}  text  Message for the live region.
-	 * @return {Element|null} The status element, or null when there is none.
-	 */
-	function setPaginationStatus( scope, text ) {
-		var status = scope
-			? scope.querySelector( '.mcr-pagination__status' )
-			: document.querySelector( '.mcr-pagination__status' );
+	function setPaginationStatus( text ) {
+		var status = document.querySelector( '.mcr-pagination__status' );
 
 		if ( status ) {
 			status.textContent = text;
 		}
-
-		return status;
 	}
 
 	function loadMoreTransactions( button ) {
@@ -1385,25 +1314,7 @@
 		}
 
 		var page = parseInt( button.getAttribute( 'data-mcr-next-page' ), 10 );
-
-		/*
-		 * The table is looked up inside the plugin's own container. A
-		 * page can render the plugin more than once, and the ids of the
-		 * later copies are suffixed, so a document-wide lookup would
-		 * have found the FIRST table and the rows would have landed in
-		 * the wrong one.
-		 */
-		var scope = button.closest ? button.closest( '[data-mcr-page]' ) : null;
-		var tbody = scope ? scope.querySelector( '[data-mcr-txn-rows]' ) : null;
-
-		if ( ! tbody ) {
-			tbody = document.getElementById( 'mcr-txn-rows' );
-		}
-
-		if ( ! tbody ) {
-			var all = document.querySelectorAll( '[data-mcr-txn-rows]' );
-			tbody = all.length ? all[ all.length - 1 ] : null;
-		}
+		var tbody = document.getElementById( 'mcr-txn-rows' );
 
 		if ( isNaN( page ) || page < 1 || ! tbody ) {
 			return;
@@ -1462,14 +1373,14 @@
 					button.removeAttribute( 'aria-busy' );
 					button.disabled = false;
 					button.textContent = label;
-					setPaginationStatus( scope, format( str( 'showing' ) || 'Showing %1$s of %2$s', number( shown ), number( total ) ) );
+					setPaginationStatus( format( str( 'showing' ) || 'Showing %1$s of %2$s', number( shown ), number( total ) ) );
 				} else {
 					/*
 					 * The button is being removed because the list is
 					 * exhausted. Move focus to the status message so a
 					 * keyboard user is not dropped back on <body>.
 					 */
-					var status = setPaginationStatus( scope, format( str( 'allShown' ) || 'All %s transactions shown.', number( total ) ) );
+					var status = setPaginationStatus( format( str( 'allShown' ) || 'All %s transactions shown.', number( total ) ) );
 
 					if ( status && status.setAttribute ) {
 						status.setAttribute( 'tabindex', '-1' );

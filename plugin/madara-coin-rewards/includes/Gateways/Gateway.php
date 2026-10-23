@@ -73,18 +73,6 @@ abstract class Gateway {
 	const UPDATABLE_COLUMNS = array( 'provider_tx_id', 'paid_at', 'expires_at' );
 
 	/**
-	 * The setting keys that hold a secret, per gateway.
-	 *
-	 * The values of these keys are encrypted at rest before they are
-	 * stored, and they are never rendered back into the settings form.
-	 *
-	 * @var array<string, string[]>
-	 */
-	const SECRET_FIELDS = array(
-		'stripe' => array( 'secret_key', 'webhook_secret' ),
-	);
-
-	/**
 	 * Per-gateway settings, as stored under `gateways.{id}` in Settings.
 	 *
 	 * @var array
@@ -240,28 +228,7 @@ abstract class Gateway {
 	 * @return bool
 	 */
 	public static function save_settings( $gateway_id, array $values ) {
-		$gateway_id = sanitize_key( (string) $gateway_id );
-		$existing   = Settings::get( 'gateways.' . $gateway_id, array() );
-		$existing   = is_array( $existing ) ? $existing : array();
-
-		return Settings::update( array( 'gateways.' . $gateway_id => self::sanitize_settings( $gateway_id, $values, $existing ) ) );
-	}
-
-	/**
-	 * Sanitizes a gateway's settings and encrypts its secret fields.
-	 *
-	 * An empty secret field means "keep the secret that is already
-	 * stored", so the settings form never blanks a credential by accident.
-	 *
-	 * @param string $gateway_id Gateway slug.
-	 * @param array  $values     Raw submitted values.
-	 * @param array  $existing   The values that are already stored.
-	 * @return array
-	 */
-	public static function sanitize_settings( $gateway_id, array $values, array $existing = array() ) {
-		$gateway_id = sanitize_key( (string) $gateway_id );
-		$secrets    = isset( self::SECRET_FIELDS[ $gateway_id ] ) ? self::SECRET_FIELDS[ $gateway_id ] : array();
-		$clean      = $existing;
+		$clean = array();
 
 		foreach ( $values as $key => $value ) {
 			$key = sanitize_key( (string) $key );
@@ -270,26 +237,10 @@ abstract class Gateway {
 				continue;
 			}
 
-			if ( is_array( $value ) ) {
-				$clean[ $key ] = self::sanitize_setting_value( $value );
-				continue;
-			}
-
-			$value = sanitize_text_field( (string) $value );
-
-			if ( in_array( $key, $secrets, true ) ) {
-				if ( '' === $value ) {
-					// Keep whatever is already stored.
-					continue;
-				}
-
-				$value = \MCR\Support\Secrets::encrypt( $value );
-			}
-
-			$clean[ $key ] = $value;
+			$clean[ $key ] = self::sanitize_setting_value( $value );
 		}
 
-		return $clean;
+		return Settings::update( array( 'gateways.' . sanitize_key( (string) $gateway_id ) => $clean ) );
 	}
 
 	/**
@@ -629,13 +580,7 @@ abstract class Gateway {
 				$ip,
 				$ua,
 				$now,
-				/*
-				 * The column is NOT NULL, so the epoch the schema
-				 * declares is used. The zero date is rejected by MySQL
-				 * in strict mode, which made every purchase order
-				 * fail to insert.
-				 */
-				'1970-01-01 00:00:00',
+				'0000-00-00 00:00:00',
 				$expires
 			)
 		);
@@ -825,26 +770,6 @@ abstract class Gateway {
 			return new WP_Error( 'mcr_invalid_coins', __( 'The coin amount of this payment is invalid.', 'madara-coin-rewards' ) );
 		}
 
-		/*
-		 * The automatic credit can be switched off. The order is then
-		 * marked paid and an administrator grants the coins from the
-		 * Tools screen, which is what the switch says.
-		 */
-		if ( ! \MCR\Settings::toggle( 'purchase.auto_credit' ) ) {
-			foreach ( array( self::STATUS_PENDING, self::STATUS_PAID ) as $from ) {
-				if ( $this->transition_order( $payment_id, $from, self::STATUS_PAID ) ) {
-					break;
-				}
-			}
-
-			return array(
-				'credited'       => false,
-				'duplicate'      => false,
-				'transaction_id' => 0,
-				'balance_after'  => $this->ledger()->get_balance( absint( $order['user_id'] ?? 0 ) ),
-			);
-		}
-
 		$tx = sanitize_text_field( (string) ( $order['provider_tx_id'] ?? '' ) );
 
 		/*
@@ -894,15 +819,6 @@ abstract class Gateway {
 			return $result;
 		}
 
-		/*
-		 * The sale is counted against the package's stock limit. The
-		 * check existed but the counter never moved, so a limited
-		 * package was never sold out.
-		 */
-		if ( empty( $result['duplicate'] ) ) {
-			$this->record_package_sale( (string) ( $order['package_id'] ?? '' ) );
-		}
-
 		// Move the row to credited. From paid first; pending→paid/credited
 		// chains rely on the caller having established the paid state.
 		if ( ! $this->transition_order( $payment_id, self::STATUS_PAID, self::STATUS_CREDITED ) ) {
@@ -943,43 +859,6 @@ abstract class Gateway {
 	 * @param string $reason Refund reason (audit).
 	 * @return array|WP_Error array{refunded:bool,reversed:bool,transaction_id:int}|WP_Error.
 	 */
-	/**
-	 * Counts a completed sale against the package's stock limit.
-	 *
-	 * @param string $package_id Package id.
-	 * @return void
-	 */
-	protected function record_package_sale( $package_id ) {
-		$package_id = sanitize_key( (string) $package_id );
-
-		if ( '' === $package_id ) {
-			return;
-		}
-
-		$packages = \MCR\Settings::get( 'packages', array() );
-
-		if ( ! is_array( $packages ) ) {
-			return;
-		}
-
-		$changed = false;
-
-		foreach ( $packages as $id => $package ) {
-			if ( ! is_array( $package ) || (string) $id !== $package_id ) {
-				continue;
-			}
-
-			$package['purchased'] = max( 0, (int) ( $package['purchased'] ?? 0 ) ) + 1;
-
-			$packages[ $id ] = $package;
-			$changed          = true;
-		}
-
-		if ( $changed ) {
-			\MCR\Settings::update( array( 'packages' => $packages ) );
-		}
-	}
-
 	protected function refund_order( array $order, $reason = '' ) {
 		$payment_id = absint( $order['id'] ?? 0 );
 		$coins      = absint( $order['coins_total'] ?? 0 );
@@ -1008,17 +887,6 @@ abstract class Gateway {
 						'source'          => 'refund',
 						'ref_type'        => 'payment',
 						'ref_id'          => $payment_id,
-						/*
-						 * A refund takes the coins back. It is NOT a
-						 * spend, so it must not count towards
-						 * lifetime_spent, and it must restore the
-						 * lifetime_earned the purchase had added.
-						 *
-						 * The coins were BOUGHT, so the purchased total
-						 * goes down as well.
-						 */
-						'reversal'        => true,
-						'restore_purchased' => true,
 					)
 				);
 			} catch ( \Throwable $e ) {

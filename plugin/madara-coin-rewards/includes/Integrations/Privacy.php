@@ -141,7 +141,7 @@ class Privacy {
 				sprintf(
 					/* translators: %d: number of transactions retained */
 					__( 'The coin transaction ledger was anonymised. %d transaction rows were retained for audit purposes.', 'madara-coin-rewards' ),
-					(int) $wpdb->get_var( "SELECT COUNT(*) FROM {$ledger} WHERE user_id = 0" ) // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					(int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$ledger} WHERE user_id = 0", $user_id ) ) // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				),
 			),
 			'done'           => true,

@@ -31,6 +31,23 @@ define( 'MCR_MIN_WP', '6.0' );
 define( 'MCR_MIN_PHP', '7.4' );
 
 /**
+ * Registers the autoloader so the MCR namespace resolves.
+ *
+ * This MUST run at file scope rather than inside the plugins_loaded
+ * callback: WordPress includes a plugin file during activation and
+ * deactivation *after* plugins_loaded has already fired, so anything
+ * deferred to that hook would leave the activation/deactivation
+ * callbacks (MCR\Installer) unresolvable and fatal with a TypeError.
+ *
+ * @return void
+ */
+function mcr_register_autoloader() {
+	require_once MCR_PLUGIN_DIR . 'includes/Autoloader.php';
+	MCR\Autoloader::register( MCR_PLUGIN_DIR );
+}
+mcr_register_autoloader();
+
+/**
  * Bootstrap the plugin.
  *
  * @return void
@@ -50,59 +67,10 @@ function mcr_bootstrap() {
 
 	MCR\Plugin::instance()->boot();
 }
-/*
- * The autoloader is registered as soon as this file is included, NOT on
- * `plugins_loaded`.
- *
- * WordPress includes a plugin's main file DURING activation, at which
- * point `plugins_loaded` has already been dispatched. Anything
- * registered on that hook therefore never runs in the activation request,
- * so a class that is only autoloaded from `plugins_loaded` cannot be
- * resolved when the activation hook fires - which is a fatal error:
- *
- *     Error: Class "MCR\Installer" not found
- *     Plugin could not be activated because it triggered a fatal error.
- *
- * Registering here makes the classes resolvable in every request,
- * including the activation request.
- */
-require_once MCR_PLUGIN_DIR . 'includes/Autoloader.php';
-MCR\Autoloader::register( MCR_PLUGIN_DIR );
-
 add_action( 'plugins_loaded', 'mcr_bootstrap', 5 );
 
-/**
- * Runs when the plugin is activated.
- *
- * The class is required explicitly rather than relying on the
- * autoloader, so activation never depends on hook ordering.
- *
- * @return void
- */
-function mcr_activate( $network_wide = false ) {
-	require_once MCR_PLUGIN_DIR . 'includes/Installer.php';
-
-	/*
-	 * WordPress passes true when the plugin is activated for the whole
-	 * network. The tables, the pages and the capabilities then have to be
-	 * provisioned on EVERY site of the network, not just the one the
-	 * activation was requested from.
-	 */
-	MCR\Installer::activate( (bool) $network_wide );
-}
-register_activation_hook( __FILE__, 'mcr_activate' );
-
-/**
- * Runs when the plugin is deactivated.
- *
- * @return void
- */
-function mcr_deactivate() {
-	require_once MCR_PLUGIN_DIR . 'includes/Installer.php';
-
-	MCR\Installer::deactivate();
-}
-register_deactivation_hook( __FILE__, 'mcr_deactivate' );
+register_activation_hook( __FILE__, array( 'MCR\Installer', 'activate' ) );
+register_deactivation_hook( __FILE__, array( 'MCR\Installer', 'deactivate' ) );
 
 /**
  * Renders an admin notice when PHP is too old.

@@ -253,7 +253,7 @@ class Packages {
 			);
 		}
 
-		$new = self::build_settings_value( $args, isset( $packages[ $id ] ) ? $packages[ $id ] : array(), true );
+		$new = self::build_settings_value( $args, isset( $packages[ $id ] ) ? $packages[ $id ] : array(), true, $id );
 
 		if ( is_wp_error( $new ) ) {
 			return $new;
@@ -283,7 +283,16 @@ class Packages {
 			return new WP_Error( 'mcr_package_unknown', __( 'This coin package does not exist.', 'madara-coin-rewards' ) );
 		}
 
-		$packages[ $id ] = self::build_settings_value( $args, $packages[ $id ], false );
+		$built = self::build_settings_value( $args, $packages[ $id ], false, $id );
+
+		// A build failure must never be written into storage: assigning the
+		// WP_Error into the map persisted a non-array and left the package
+		// unusable, and the caller only saw a generic "could not be saved".
+		if ( is_wp_error( $built ) ) {
+			return $built;
+		}
+
+		$packages[ $id ] = $built;
 
 		if ( ! self::persist( $packages ) ) {
 			return new WP_Error( 'mcr_package_save_failed', __( 'The package could not be saved.', 'madara-coin-rewards' ) );
@@ -361,12 +370,13 @@ class Packages {
 	 * Settings::sanitizePackages() so no key outside the allowlist ever
 	 * reaches storage (mass-assignment defence).
 	 *
-	 * @param array $args     Raw fields.
-	 * @param array $existing Existing raw value (may be empty).
-	 * @param bool  $is_new   Whether this is a create (defaults differ).
+	 * @param array  $args     Raw fields.
+	 * @param array  $existing Existing raw value (may be empty).
+	 * @param bool   $is_new   Whether this is a create (defaults differ).
+	 * @param string $id       Package id; stored as the map key and the `id` field.
 	 * @return array|WP_Error Sanitized settings value, or an error.
 	 */
-	private static function build_settings_value( array $args, array $existing, $is_new ) {
+	private static function build_settings_value( array $args, array $existing, $is_new, $id = '' ) {
 		$base = array();
 
 		foreach ( self::fields() as $field ) {
@@ -399,7 +409,18 @@ class Packages {
 		$base['active'] = ( ! empty( $base['active'] ) && 'off' !== $base['active'] ) ? 'on' : 'off';
 
 		// Sanitize through the shared allowlist: unknown keys are dropped.
-		$clean = Settings::sanitizePackages( array( 'id' => $base ) );
+		// The package id is passed under its REAL key: sanitizePackages()
+		// reads the id from the inner field or, failing that, from the key.
+		// Passing a literal 'id' key made every stored package claim to be
+		// called "id".
+		$id = sanitize_key( (string) $id );
+		unset( $base['id'] );
+
+		if ( '' === $id ) {
+			return new WP_Error( 'mcr_package_invalid', __( 'The package fields are invalid.', 'madara-coin-rewards' ) );
+		}
+
+		$clean = Settings::sanitizePackages( array( $id => $base ) );
 
 		if ( empty( $clean ) ) {
 			return new WP_Error( 'mcr_package_invalid', __( 'The package fields are invalid.', 'madara-coin-rewards' ) );

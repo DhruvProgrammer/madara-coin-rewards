@@ -112,16 +112,6 @@ class BalanceMath {
 
 		$new = $balance + $amount;
 
-		/*
-		 * A negative balance is a corruption state the plugin must
-		 * survive: the balance can never be reported as negative, so a
-		 * credit that still leaves the balance below zero is clamped to
-		 * zero instead of handing a negative value back to the caller.
-		 */
-		if ( $new < 0 ) {
-			return 0;
-		}
-
 		if ( $new > self::MAX_BALANCE ) {
 			return false;
 		}

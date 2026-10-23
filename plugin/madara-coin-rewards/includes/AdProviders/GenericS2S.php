@@ -98,7 +98,7 @@ class GenericS2S extends Provider {
 	 * @return bool
 	 */
 	public function is_configured() {
-		return '' !== $this->secret();
+		return '' !== trim( (string) $this->get_setting( 'postback_secret', '' ) );
 	}
 
 	/**
@@ -505,130 +505,124 @@ class GenericS2S extends Provider {
 		$sessions = \MCR\Rewards\AdSessions::instance();
 		$lock     = $sessions->lock_user( absint( $session['user_id'] ) );
 
-		/*
-		 * The advisory lock is held across the cap check AND the grant, so
-		 * two simultaneous postbacks cannot both read the same count and
-		 * both pass it.
-		 *
-		 * try/finally guarantees the lock is released even when the
-		 * database or a hooked action throws. A leaked GET_LOCK is
-		 * connection scoped, so on a persistent connection it would
-		 * deadlock the user for the life of that connection.
-		 */
-		try {
-			$cap = $sessions->cap_guard( absint( $session['user_id'] ), absint( $session['id'] ) );
+		$cap = $sessions->cap_guard( absint( $session['user_id'] ), absint( $session['id'] ) );
 
-			if ( is_wp_error( $cap ) ) {
-				// The reward is not granted. The session is expired rather than
-				// left pending, so the network does not retry forever.
-				$wpdb->query(
-					$wpdb->prepare(
-						"UPDATE {$table}
-							SET status = 'expired', verified_at = %s
-							WHERE id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-						current_time( 'mysql', true ),
-						absint( $session['id'] )
-					)
-				);
+		if ( is_wp_error( $cap ) ) {
+			$sessions->unlock_user( $lock );
 
-				$this->log_security_event(
-					'ad_postback_daily_limit_reached',
-					array(
-						'session' => absint( $session['id'] ),
-						'user_id'  => absint( $session['user_id'] ),
-					)
-				);
-
-				return new \WP_REST_Response( array( 'received' => true, 'credited' => false, 'reason' => 'daily_limit' ), 200 );
-			}
-
-			// Atomic single-use transition: only 'pending' sessions may become
-			// 'credited', and only this UPDATE wins the race.
-			//
-			$affected = $wpdb->query(
+			// The reward is not granted. The session is expired rather than
+			// left pending, so the network does not retry forever.
+			$wpdb->query(
 				$wpdb->prepare(
-					"UPDATE {$table}
-						SET status = 'credited', completion_token = %s, verified_at = %s
-						WHERE session_token = %s AND status = 'pending'", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$transaction,
+				"UPDATE {$table}
+					SET status = 'expired', verified_at = %s
+					WHERE id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					current_time( 'mysql', true ),
-					$session_token
+					absint( $session['id'] )
 				)
 			);
 
-			if ( 1 !== (int) $affected ) {
-				// Lost the race or an invalid state: duplicates answer 200.
-				return new \WP_REST_Response( array( 'received' => true, 'duplicate' => true ), 200 );
-			}
-
-			// Credit with the policy-exact key so a double grant is impossible
-			// no matter which pipeline got there first.
-			try {
-				$credit = Ledger::instance()->credit(
-					absint( $session['user_id'] ),
-					$coins,
-					'ad_reward',
-					__( 'Rewarded ad (network verified)', 'madara-coin-rewards' ),
-					array(
-						'idempotency_key' => 'ad_session:' . absint( $session['id'] ),
-						'source'          => 'ad:' . $this->get_id(),
-						'ref_type'        => 'ad_session',
-						'ref_id'          => absint( $session['id'] ),
-					)
-				);
-			} catch ( \Throwable $e ) {
-				// Roll the session back to pending so the network retry can
-				// redo the grant (the SAME idempotency key guarantees no double credit).
-				$wpdb->query(
-					$wpdb->prepare(
-						"UPDATE {$table}
-							SET status = 'pending', verified_at = '1970-01-01 00:00:00'
-							WHERE id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-						absint( $session['id'] )
-					)
-				);
-
-				$this->log_security_event(
-					'ad_postback_credit_failed',
-					array( 'session' => absint( $session['id'] ) )
-				);
-
-				return new WP_REST_Response( array( 'received' => true, 'credited' => false ), 500 );
-			}
-
-			if ( is_wp_error( $credit ) ) {
-				$wpdb->query(
-					$wpdb->prepare(
-						"UPDATE {$table}
-							SET status = 'pending', verified_at = '1970-01-01 00:00:00'
-							WHERE id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-						absint( $session['id'] )
-					)
-				);
-
-				$this->log_security_event(
-					'ad_postback_credit_failed',
-					array(
-						'session' => absint( $session['id'] ),
-						'code'    => sanitize_key( $credit->get_error_code() ),
-					)
-				);
-
-				return new WP_REST_Response( array( 'received' => true, 'credited' => false ), 500 );
-			}
-
-			return new WP_REST_Response(
+			$this->log_security_event(
+				'ad_postback_daily_limit_reached',
 				array(
-					'received'  => true,
-					'credited'  => true,
-					'amount'    => $coins,
-					'duplicate' => ! empty( $credit['duplicate'] ),
-				),
-				200
+					'session' => absint( $session['id'] ),
+					'user_id'  => absint( $session['user_id'] ),
+				)
 			);
-		} finally {
-			$sessions->unlock_user( $lock );
+
+			return new \WP_REST_Response( array( 'received' => true, 'credited' => false, 'reason' => 'daily_limit' ), 200 );
 		}
+
+		// Atomic single-use transition: only 'pending' sessions may become
+		// 'credited', and only this UPDATE wins the race.
+		//
+		$affected = $wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$table}
+					SET status = 'credited', completion_token = %s, verified_at = %s
+				 WHERE session_token = %s AND status = 'pending'", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$transaction,
+				current_time( 'mysql', true ),
+				$session_token
+			)
+		);
+
+		if ( 1 !== (int) $affected ) {
+			$sessions->unlock_user( $lock );
+
+			// Lost the race or an invalid state: duplicates answer 200.
+			return new WP_REST_Response( array( 'received' => true, 'duplicate' => true ), 200 );
+		}
+
+		// Credit with the policy-exact key so a double grant is impossible
+		// no matter which pipeline got there first.
+		try {
+			$credit = Ledger::instance()->credit(
+				absint( $session['user_id'] ),
+				$coins,
+				'ad_reward',
+				__( 'Rewarded ad (network verified)', 'madara-coin-rewards' ),
+				array(
+					'idempotency_key' => 'ad_session:' . absint( $session['id'] ),
+					'source'          => 'ad:' . $this->get_id(),
+					'ref_type'        => 'ad_session',
+					'ref_id'          => absint( $session['id'] ),
+				)
+			);
+		} catch ( \Throwable $e ) {
+			$sessions->unlock_user( $lock );
+
+			// Roll the session back to pending so the network retry can
+			// redo the grant (the SAME idempotency key guarantees no double credit).
+			$wpdb->query(
+				$wpdb->prepare(
+					"UPDATE {$table}
+						SET status = 'pending', verified_at = '0000-00-00 00:00:00'
+					 WHERE id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					absint( $session['id'] )
+				)
+			);
+
+			$this->log_security_event(
+				'ad_postback_credit_failed',
+				array( 'session' => absint( $session['id'] ) )
+			);
+
+			return new WP_REST_Response( array( 'received' => true, 'credited' => false ), 500 );
+		}
+
+		$sessions->unlock_user( $lock );
+
+		if ( is_wp_error( $credit ) ) {
+			$wpdb->query(
+				$wpdb->prepare(
+					"UPDATE {$table}
+						SET status = 'pending', verified_at = '0000-00-00 00:00:00'
+					 WHERE id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					absint( $session['id'] )
+				)
+			);
+
+			$this->log_security_event(
+				'ad_postback_credit_failed',
+				array(
+					'session' => absint( $session['id'] ),
+					'code'    => sanitize_key( $credit->get_error_code() ),
+				)
+			);
+
+			return new WP_REST_Response( array( 'received' => true, 'credited' => false ), 500 );
+		}
+
+		return new WP_REST_Response(
+			array(
+				'received'  => true,
+				'credited'  => true,
+				'amount'    => $coins,
+				'duplicate' => ! empty( $credit['duplicate'] ),
+			),
+			200
+		);
 	}
 
 	/**
@@ -681,7 +675,7 @@ class GenericS2S extends Provider {
 	 * @return string
 	 */
 	private function secret() {
-		return \MCR\Support\Secrets::decrypt( (string) $this->get_setting( 'postback_secret', '' ) );
+		return trim( (string) $this->get_setting( 'postback_secret', '' ) );
 	}
 
 	/**
@@ -753,22 +747,14 @@ class GenericS2S extends Provider {
 				'id'          => 'signature_header',
 				'label'       => __( 'Signature header', 'madara-coin-rewards' ),
 				'type'        => 'text',
-				'description' => sprintf(
-					/* translators: %s: the default HTTP header that carries the HMAC signature. */
-					__( 'Header carrying the HMAC. Default: %s.', 'madara-coin-rewards' ),
-					self::DEFAULT_SIGNATURE_HEADER
-				),
+				'description' => __( 'Header carrying the HMAC. Default: ' . self::DEFAULT_SIGNATURE_HEADER . '.', 'madara-coin-rewards' ),
 				'default'     => self::DEFAULT_SIGNATURE_HEADER,
 			),
 			array(
 				'id'          => 'timestamp_header',
 				'label'       => __( 'Timestamp header', 'madara-coin-rewards' ),
 				'type'        => 'text',
-				'description' => sprintf(
-					/* translators: %s: the default HTTP header that carries the unix timestamp. */
-					__( 'Header carrying a unix timestamp for the 300 second replay window; leave empty to disable that check. Default: %s.', 'madara-coin-rewards' ),
-					self::DEFAULT_TIMESTAMP_HEADER
-				),
+				'description' => __( 'Header carrying a unix timestamp for the 300 second replay window; leave empty to disable that check. Default: ' . self::DEFAULT_TIMESTAMP_HEADER . '.', 'madara-coin-rewards' ),
 				'default'     => self::DEFAULT_TIMESTAMP_HEADER,
 			),
 			array(

@@ -76,6 +76,33 @@ if ( ! $mcr_available ) {
 	$mcr_classes .= ' is-unavailable';
 }
 
+/*
+ * Price per coin. Computed from the integer minor-unit price so the money
+ * maths never runs through a float division, and shown only when it is
+ * genuinely meaningful (a real price and a real coin amount).
+ */
+$mcr_minor = isset( $mcr_package['price_minor'] )
+	? (int) $mcr_package['price_minor']
+	: \MCR\Payments\Packages::price_minor( $mcr_package );
+
+$mcr_unit_price = '';
+
+if ( $mcr_available && $mcr_minor > 0 && $mcr_total > 0 ) {
+	// Coins that 100 minor units (one currency unit) buys.
+	$mcr_per_unit = ( $mcr_total * 100 ) / $mcr_minor;
+	$mcr_decimals = ( fmod( (float) $mcr_per_unit, 1.0 ) > 0 ) ? 0 : 0;
+
+	$mcr_unit_price = number_format_i18n( $mcr_per_unit );
+	unset( $mcr_decimals );
+}
+
+$mcr_premium   = ! empty( $args['premium'] );
+$mcr_login_url = isset( $args['login_url'] ) ? (string) $args['login_url'] : '';
+
+if ( $mcr_premium ) {
+	$mcr_classes .= ' mcr-package--premium';
+}
+
 $mcr_decimals = ( $mcr_price === floor( $mcr_price ) ) ? 0 : 2;
 ?>
 <article class="<?php echo esc_attr( $mcr_classes ); ?>" aria-labelledby="mcr-package-<?php echo esc_attr( $mcr_id ); ?>-name">
@@ -104,6 +131,18 @@ $mcr_decimals = ( $mcr_price === floor( $mcr_price ) ) ? 0 : 2;
 		<?php if ( $mcr_available ) : ?>
 			<span class="mcr-package__price-amount"><?php echo esc_html( number_format_i18n( $mcr_price, $mcr_decimals ) ); ?></span>
 			<span class="mcr-package__price-currency"><?php echo esc_html( $mcr_currency ); ?></span>
+			<?php if ( '' !== $mcr_unit_price ) : ?>
+				<span class="mcr-package__unit">
+					<?php
+					printf(
+						/* translators: %s: coins per currency unit */
+						esc_html__( '%s coins per %s', 'madara-coin-rewards' ),
+						esc_html( $mcr_unit_price ),
+						esc_html( $mcr_currency )
+					);
+					?>
+				</span>
+			<?php endif; ?>
 		<?php else : ?>
 			<span class="mcr-muted"><?php esc_html_e( 'Unavailable', 'madara-coin-rewards' ); ?></span>
 		<?php endif; ?>
@@ -120,12 +159,18 @@ $mcr_decimals = ( $mcr_price === floor( $mcr_price ) ) ? 0 : 2;
 
 	<?php if ( $mcr_available ) : ?>
 		<?php if ( $mcr_disabled ) : ?>
-			<button type="button" class="mcr-btn mcr-btn--block" disabled aria-disabled="true"
-				<?php echo '' !== $mcr_described ? 'aria-describedby="' . esc_attr( $mcr_described ) . '"' : ''; ?>>
-				<?php echo esc_html( $mcr_cta ); ?>
-			</button>
+			<?php if ( '' !== $mcr_login_url ) : ?>
+				<a class="mcr-btn mcr-btn--primary mcr-btn--block" href="<?php echo esc_url( $mcr_login_url ); ?>">
+					<?php echo esc_html( $mcr_cta ); ?>
+				</a>
+			<?php else : ?>
+				<button type="button" class="mcr-btn mcr-btn--block" disabled aria-disabled="true"
+					<?php echo '' !== $mcr_described ? 'aria-describedby="' . esc_attr( $mcr_described ) . '"' : ''; ?>>
+					<?php echo esc_html( $mcr_cta ); ?>
+				</button>
+			<?php endif; ?>
 		<?php else : ?>
-			<button type="button" class="mcr-btn mcr-btn--block" data-mcr-buy
+			<button type="button" class="mcr-btn mcr-btn--primary mcr-btn--block" data-mcr-buy
 				data-mcr-package="<?php echo esc_attr( $mcr_id ); ?>">
 				<?php echo esc_html( $mcr_cta ); ?>
 			</button>
