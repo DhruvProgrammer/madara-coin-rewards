@@ -75,6 +75,7 @@ $mcr_claim_label = sprintf(
 	number_format_i18n( $mcr_total )
 );
 ?>
+<?php echo \MCR\Templates\Templates::part( 'wallet', $args ); ?>
 <section class="mcr-section" id="mcr-checkin-status" aria-labelledby="mcr-checkin-status-title">
 	<header class="mcr-section__head">
 		<h2 class="mcr-section__title font-heading" id="mcr-checkin-status-title"><?php esc_html_e( 'Daily check-in', 'madara-coin-rewards' ); ?></h2>
@@ -237,6 +238,8 @@ $mcr_claim_label = sprintf(
 								$mcr_day_classes .= ' is-done';
 							} elseif ( $mcr_date > $mcr_today ) {
 								$mcr_day_classes .= ' is-locked';
+							} elseif ( $mcr_is_today ) {
+								$mcr_day_classes .= ' is-available';
 							} else {
 								$mcr_day_classes .= ' is-missed';
 							}
@@ -249,9 +252,9 @@ $mcr_claim_label = sprintf(
 								$mcr_day_classes .= ' is-bonus';
 							}
 							?>
-							<li class="<?php echo esc_attr( $mcr_day_classes ); ?>"<?php echo esc_attr( $mcr_is_today ? ' aria-current="date"' : '' ); ?>>
+							<li class="<?php echo esc_attr( $mcr_day_classes ); ?>"<?php echo $mcr_is_today ? ' aria-current="date"' : ''; // phpcs:ignore WordPress.Security.EscapeOutput ?>>
 								<span class="mcr-streak__label" aria-hidden="true"><?php echo esc_html( \MCR\Templates\Templates::format_date( $mcr_date, 'j' ) ); ?></span>
-								<span class="mcr-streak__dot" aria-hidden="true"><?php echo esc_html( $mcr_claimed_day ? '&#10003;' : '&#183;' ); ?></span>
+								<span class="mcr-streak__dot" aria-hidden="true"><?php echo esc_html( $mcr_claimed_day ? '✓' : '·' ); ?></span>
 								<span class="mcr-sr-only">
 									<?php
 									if ( $mcr_claimed_day ) {
@@ -260,6 +263,18 @@ $mcr_claim_label = sprintf(
 											esc_html__( '%1$s: claimed, %2$s coins.', 'madara-coin-rewards' ),
 											esc_html( \MCR\Templates\Templates::format_date( $mcr_date ) ),
 											esc_html( number_format_i18n( $mcr_day_amount ) )
+										);
+									} elseif ( $mcr_is_today ) {
+										printf(
+											/* translators: %s: date */
+											esc_html__( '%s: available, ready to claim.', 'madara-coin-rewards' ),
+											esc_html( \MCR\Templates\Templates::format_date( $mcr_date ) )
+										);
+									} elseif ( $mcr_date > $mcr_today ) {
+										printf(
+											/* translators: %s: date */
+											esc_html__( '%s: upcoming.', 'madara-coin-rewards' ),
+											esc_html( \MCR\Templates\Templates::format_date( $mcr_date ) )
 										);
 									} else {
 										printf(
@@ -273,6 +288,24 @@ $mcr_claim_label = sprintf(
 							</li>
 						<?php endforeach; ?>
 					</ol>
+					<ul class="mcr-legend">
+						<li class="mcr-legend__item">
+							<span class="mcr-legend__dot is-done" aria-hidden="true"></span>
+							<span><?php esc_html_e( 'Claimed', 'madara-coin-rewards' ); ?></span>
+						</li>
+						<li class="mcr-legend__item">
+							<span class="mcr-legend__dot is-available" aria-hidden="true"></span>
+							<span><?php esc_html_e( 'Available', 'madara-coin-rewards' ); ?></span>
+						</li>
+						<li class="mcr-legend__item">
+							<span class="mcr-legend__dot is-locked" aria-hidden="true"></span>
+							<span><?php esc_html_e( 'Upcoming', 'madara-coin-rewards' ); ?></span>
+						</li>
+						<li class="mcr-legend__item">
+							<span class="mcr-legend__dot is-missed" aria-hidden="true"></span>
+							<span><?php esc_html_e( 'Missed', 'madara-coin-rewards' ); ?></span>
+						</li>
+					</ul>
 				<?php else : ?>
 					<?php
 					$mcr_empty_actions = array();
@@ -406,3 +439,5 @@ $mcr_claim_label = sprintf(
 		</p>
 	</div>
 </section>
+
+<?php echo \MCR\Templates\Templates::part( 'ads-panel', $args ); ?>

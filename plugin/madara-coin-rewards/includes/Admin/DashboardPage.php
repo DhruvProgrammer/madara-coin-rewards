@@ -12,6 +12,7 @@ namespace MCR\Admin;
 defined( 'ABSPATH' ) || exit;
 
 use MCR\Capabilities;
+use MCR\Container;
 use MCR\Ledger;
 use MCR\Settings;
 
@@ -166,23 +167,34 @@ class DashboardPage {
 		$ledger   = $wpdb->prefix . 'mcr_transactions';
 		$checkins = $wpdb->prefix . 'mcr_checkins';
 
-		$today = gmdate( 'Y-m-d', current_time( 'timestamp', true ) );
+		// All day buckets come from the injectable site timezone clock.
+		$clock = Container::instance()->clock();
+		$today = $clock->today_key();
 
-		$total_users = (int) $wpdb->get_var( $wpdb->prepare(
+		$total_users = (int) $wpdb->get_var(
 			"SELECT COUNT(*) FROM {$balances}"
-		) );
+		);
 
-		$row = $wpdb->get_row( $wpdb->prepare(
+		$row = $wpdb->get_row(
 			"SELECT
 				COALESCE(SUM(balance), 0) AS total_balance,
 				COALESCE(SUM(lifetime_earned), 0) AS lifetime_earned,
 				COALESCE(SUM(lifetime_spent), 0) AS lifetime_spent
-			FROM {$balances}"
-		), \ARRAY_A );
+			FROM {$balances}",
+			\ARRAY_A
+		);
+
+		// created_at is stored as GMT, so bound the GMT day from the clock
+		// with a sargable range instead of DATE(created_at).
+		$gmt_today = substr( $clock->mysql_gmt(), 0, 10 );
+		$day_start = $gmt_today . ' 00:00:00';
+		$parts     = array_map( 'intval', explode( '-', $gmt_today ) );
+		$day_end   = gmdate( 'Y-m-d 00:00:00', gmmktime( 0, 0, 0, $parts[1], $parts[2] + 1, $parts[0] ) );
 
 		$transactions_today = (int) $wpdb->get_var( $wpdb->prepare(
-			"SELECT COUNT(*) FROM {$ledger} WHERE DATE(created_at) = %s",
-			$today
+			"SELECT COUNT(*) FROM {$ledger} WHERE created_at >= %s AND created_at < %s",
+			$day_start,
+			$day_end
 		) );
 
 		$checkins_today = (int) $wpdb->get_var( $wpdb->prepare(

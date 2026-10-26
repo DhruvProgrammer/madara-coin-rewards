@@ -24,18 +24,30 @@
 
 defined( 'ABSPATH' ) || exit;
 
-$mcr_enabled     = ! empty( $args['enabled'] );
-$mcr_configured  = ! empty( $args['configured'] );
-$mcr_units       = isset( $args['units'] ) && is_array( $args['units'] ) ? $args['units'] : array();
+$mcr_enabled     = ! empty( $args['enabled'] ) || ! empty( $args['ads_enabled'] );
+$mcr_configured  = ! empty( $args['configured'] ) || ! empty( $args['ads_configured'] );
+$mcr_units       = isset( $args['units'] ) && is_array( $args['units'] )
+	? $args['units']
+	: ( isset( $args['ad_units'] ) && is_array( $args['ad_units'] ) ? $args['ad_units'] : array() );
 $mcr_ads         = isset( $args['ads'] ) && is_array( $args['ads'] ) ? $args['ads'] : array();
 $mcr_urls        = isset( $args['urls'] ) && is_array( $args['urls'] ) ? $args['urls'] : array();
 $mcr_coins       = isset( $args['coins_per_ad'] ) ? max( 0, (int) $args['coins_per_ad'] ) : 0;
 $mcr_limit       = isset( $args['daily_limit'] ) ? max( 0, (int) $args['daily_limit'] ) : 0;
-$mcr_cooldown    = isset( $args['cooldown'] ) ? max( 0, (int) $args['cooldown'] ) : 0;
-$mcr_reset       = isset( $args['reset_deadline'] ) ? (string) $args['reset_deadline'] : '';
+$mcr_cooldown    = isset( $args['cooldown'] )
+	? max( 0, (int) $args['cooldown'] )
+	: ( isset( $args['ads_cooldown'] ) ? max( 0, (int) $args['ads_cooldown'] ) : 0 );
+$mcr_reset       = isset( $args['reset_deadline'] )
+	? (string) $args['reset_deadline']
+	: ( isset( $args['ads_reset'] ) ? (string) $args['ads_reset'] : '' );
 $mcr_today       = isset( $mcr_ads['today'] ) ? max( 0, (int) $mcr_ads['today'] ) : 0;
 $mcr_remaining   = isset( $mcr_ads['remaining'] ) ? max( 0, (int) $mcr_ads['remaining'] ) : max( 0, $mcr_limit - $mcr_today );
 $mcr_capped      = $mcr_limit > 0 && $mcr_remaining < 1;
+
+/*
+ * A daily limit of zero means UNLIMITED, so the panel says so instead
+ * of "0 of 0 ads left today".
+ */
+$mcr_unlimited = $mcr_limit <= 0;
 
 /*
  * A reward of zero can never be paid: the ledger rejects a zero
@@ -43,12 +55,6 @@ $mcr_capped      = $mcr_limit > 0 && $mcr_remaining < 1;
  * panel explains the state instead of offering one.
  */
 $mcr_no_reward = $mcr_coins <= 0;
-
-/*
- * A daily limit of zero means UNLIMITED, so the panel says so instead
- * of "0 of 0 ads left today".
- */
-$mcr_unlimited = $mcr_limit <= 0;
 
 /*
  * The coins the ad sessions really paid today, not the count times the
@@ -67,9 +73,12 @@ $mcr_units = array_slice( $mcr_units, 0, 20 );
 $mcr_unit_label = '';
 
 foreach ( $mcr_units as $mcr_unit ) {
-	if ( is_array( $mcr_unit ) && ! empty( $mcr_unit['label'] ) ) {
-		$mcr_unit_label = (string) $mcr_unit['label'];
-		break;
+	if ( is_array( $mcr_unit ) ) {
+		$label = ! empty( $mcr_unit['label'] ) ? $mcr_unit['label'] : ( ! empty( $mcr_unit['title'] ) ? $mcr_unit['title'] : '' );
+		if ( '' !== (string) $label ) {
+			$mcr_unit_label = (string) $label;
+			break;
+		}
 	}
 }
 $mcr_txn_url     = isset( $mcr_urls['transactions'] ) ? (string) $mcr_urls['transactions'] : '';
@@ -236,9 +245,9 @@ if ( $mcr_enabled && $mcr_configured && empty( $mcr_units ) ) {
 							}
 
 							$mcr_unit_id    = sanitize_key( (string) $mcr_unit['id'] );
-							$mcr_unit_label = isset( $mcr_unit['label'] ) && '' !== (string) $mcr_unit['label']
+							$mcr_unit_label = ! empty( $mcr_unit['label'] )
 								? (string) $mcr_unit['label']
-								: __( 'Rewarded video', 'madara-coin-rewards' );
+								: ( ! empty( $mcr_unit['title'] ) ? (string) $mcr_unit['title'] : __( 'Rewarded video', 'madara-coin-rewards' ) );
 							?>
 							<button type="button" class="mcr-btn mcr-btn--block mcr-btn--gold" data-mcr-ad-start
 								data-mcr-ad-unit="<?php echo esc_attr( $mcr_unit_id ); ?>"

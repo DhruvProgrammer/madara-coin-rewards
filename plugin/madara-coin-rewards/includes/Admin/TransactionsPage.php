@@ -21,6 +21,71 @@ use MCR\Ledger;
 class TransactionsPage {
 
 	/**
+	 * Maximum offset allowed for pagination to prevent deep offset table scans.
+	 */
+	const OFFSET_CAP = 10000;
+
+	/**
+	 * Builds WHERE clauses and arguments for the ledger table.
+	 *
+	 * @param array $filters         Filter values: user, type, from, to, search.
+	 * @param bool  $can_view_users  Whether the viewer can see all users.
+	 * @param int   $current_user_id Current user ID.
+	 * @return array Array containing [ array $where, array $args, bool $has_like ].
+	 */
+	public static function build_where( array $filters, $can_view_users, $current_user_id ) {
+		global $wpdb;
+
+		$where    = array();
+		$args     = array();
+		$has_like = false;
+
+		if ( ! $can_view_users ) {
+			$where[] = 't.user_id = %d';
+			$args[]  = (int) $current_user_id;
+		}
+
+		if ( ! empty( $filters['user'] ) && $can_view_users ) {
+			$uid = absint( $filters['user'] );
+			if ( $uid ) {
+				$where[] = 't.user_id = %d';
+				$args[]  = $uid;
+			}
+		}
+
+		if ( ! empty( $filters['type'] ) ) {
+			$where[] = 't.type = %s';
+			$args[]  = (string) $filters['type'];
+		}
+
+		if ( ! empty( $filters['from'] ) ) {
+			$from = trim( (string) $filters['from'] );
+			if ( 10 === strlen( $from ) ) {
+				$from .= ' 00:00:00';
+			}
+			$where[] = 't.created_at >= %s';
+			$args[]  = $from;
+		}
+
+		if ( ! empty( $filters['to'] ) ) {
+			$to = trim( (string) $filters['to'] );
+			if ( 10 === strlen( $to ) ) {
+				$to .= ' 23:59:59';
+			}
+			$where[] = 't.created_at <= %s';
+			$args[]  = $to;
+		}
+
+		if ( ! empty( $filters['search'] ) ) {
+			$where[]  = 't.reason LIKE %s';
+			$args[]   = '%' . ( $wpdb ? $wpdb->esc_like( $filters['search'] ) : addcslashes( $filters['search'], '_%\\' ) ) . '%';
+			$has_like = true;
+		}
+
+		return array( $where, $args, $has_like );
+	}
+
+	/**
 	 * Renders the transactions page.
 	 *
 	 * @return void
@@ -57,23 +122,32 @@ class TransactionsPage {
 					<button type="submit" class="button"><?php esc_html_e( 'Filter', 'madara-coin-rewards' ); ?></button>
 					<a href="admin.php?page=mcr-transactions" class="button button-secondary"><?php esc_html_e( 'Reset', 'madara-coin-rewards' ); ?></a>
 
-					<?php if ( Capabilities::can_manage_coins() ) : ?>
-						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline;">
-							<?php
-							wp_nonce_field( 'mcr_admin_action', '_wpnonce' );
-							echo '<input type="hidden" name="action" value="mcr_export_transactions" />';
-							// Pass through current filters as hidden fields.
-							foreach ( array( 'user', 'type', 'from', 'to', 'search' ) as $k ) {
-								if ( isset( $_GET[ $k ] ) ) {
-									echo '<input type="hidden" name="' . esc_attr( $k ) . '" value="' . esc_attr( wp_unslash( $_GET[ $k ] ) ) . '" />';
-								}
-							}
-							?>
-							<button type="submit" class="button button-secondary"><?php esc_html_e( 'Export CSV', 'madara-coin-rewards' ); ?></button>
-						</form>
-					<?php endif; ?>
 				</div>
 			</form>
+
+			<?php if ( Capabilities::can_manage_coins() ) : ?>
+				<?php
+				/*
+				 * The export form is a sibling of the filter form, not a
+				 * child of it. HTML does not allow nested forms, so the
+				 * browser dropped the inner one and the CSV button
+				 * submitted the filter form instead.
+				 */
+				?>
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+					<?php
+					wp_nonce_field( 'mcr_admin_action', '_wpnonce' );
+					echo '<input type="hidden" name="action" value="mcr_export_transactions" />';
+					// Pass through current filters as hidden fields.
+					foreach ( array( 'user', 'type', 'from', 'to', 'search' ) as $k ) {
+						if ( isset( $_GET[ $k ] ) ) {
+							echo '<input type="hidden" name="' . esc_attr( $k ) . '" value="' . esc_attr( wp_unslash( $_GET[ $k ] ) ) . '" />';
+						}
+					}
+					?>
+					<button type="submit" class="button button-secondary"><?php esc_html_e( 'Export CSV', 'madara-coin-rewards' ); ?></button>
+				</form>
+			<?php endif; ?>
 
 			<?php $this->render_ledger_table(); ?>
 		</div>
@@ -91,15 +165,6 @@ class TransactionsPage {
 		$current_user_id = get_current_user_id();
 		$can_view_users  = Capabilities::can_view_users();
 
-		$where = array();
-		$args  = array();
-
-		// Privacy: non-admins only see their own transactions.
-		if ( ! $can_view_users ) {
-			$where[] = 't.user_id = %d';
-			$args[]  = $current_user_id;
-		}
-
 		$filters = array(
 			'user'   => isset( $_GET['user'] ) ? sanitize_text_field( wp_unslash( $_GET['user'] ) ) : '',
 			'type'   => isset( $_GET['type'] ) ? sanitize_key( wp_unslash( $_GET['type'] ) ) : '',
@@ -108,43 +173,17 @@ class TransactionsPage {
 			'search' => isset( $_GET['search'] ) ? sanitize_text_field( wp_unslash( $_GET['search'] ) ) : '',
 		);
 
-		if ( $filters['user'] && $can_view_users ) {
-			$uid = absint( $filters['user'] );
-			if ( $uid ) {
-				$where[] = 't.user_id = %d';
-				$args[]  = $uid;
-			}
-		}
+		list( $where, $args, $has_like ) = self::build_where( $filters, $can_view_users, $current_user_id );
 
-		if ( $filters['type'] ) {
-			$where[] = 't.type = %s';
-			$args[]  = $filters['type'];
-		}
-
-		if ( $filters['from'] ) {
-			$where[] = 'DATE(t.created_at) >= %s';
-			$args[]  = $filters['from'];
-		}
-
-		if ( $filters['to'] ) {
-			$where[] = 'DATE(t.created_at) <= %s';
-			$args[]  = $filters['to'];
-		}
-
-		if ( $filters['search'] ) {
-			$where[] = 't.reason LIKE %s';
-			$args[]  = '%' . $wpdb->esc_like( $filters['search'] ) . '%';
-		}
-
-		$where_sql = '' === implode( ' ', $where ) ? '' : 'WHERE ' . implode( ' AND ', $where );
+		$where_sql = empty( $where ) ? '' : 'WHERE ' . implode( ' AND ', $where );
 
 		$per_page = 25;
 		$paged    = max( 1, absint( $_GET['paged'] ?? 1 ) );
-		$offset   = ( $paged - 1 ) * $per_page;
+		$offset   = min( ( $paged - 1 ) * $per_page, self::OFFSET_CAP );
 
-		$args_for_limit = $args;
-		$args_for_limit[] = $per_page;
-		$args_for_limit[] = $offset;
+		$limit_args   = $args;
+		$limit_args[] = $per_page + 1; // One extra row detects whether more pages exist.
+		$limit_args[] = $offset;
 
 		$rows = $wpdb->get_results( $wpdb->prepare(
 			"SELECT t.id, t.txn_uid, t.user_id, t.type, t.amount, t.balance_after, t.reason, t.source, t.created_at
@@ -152,13 +191,23 @@ class TransactionsPage {
 			 {$where_sql}
 			 ORDER BY t.id DESC
 			 LIMIT %d OFFSET %d",
-			$args_for_limit
+			$limit_args
 		), \ARRAY_A );
 
-		$total = (int) $wpdb->get_var( $wpdb->prepare(
-			"SELECT COUNT(*) FROM {$wpdb->prefix}mcr_transactions t {$where_sql}",
-			$args
-		) );
+		$rows     = array_slice( (array) $rows, 0, $per_page );
+		$has_more = count( $rows ) === $per_page;
+
+		// Bounded COUNT(*): skipped for a reason search (an unbounded COUNT over
+		// a LIKE '%term%' predicate is a full ledger scan per search; Prev/Next
+		// pagination works from the extra row) and when the query is unfiltered
+		// (no WHERE means counting a whole table).
+		$total = null;
+		if ( ! $has_like && ! empty( $where ) ) {
+			$total = (int) $wpdb->get_var( $wpdb->prepare(
+				"SELECT COUNT(*) FROM {$wpdb->prefix}mcr_transactions t {$where_sql}",
+				$args
+			) );
+		}
 
 		if ( empty( $rows ) ) {
 			echo '<p>' . esc_html__( 'No transactions found.', 'madara-coin-rewards' ) . '</p>';
@@ -193,7 +242,7 @@ class TransactionsPage {
 				$amount_class = $amount > 0 ? 'mcr-admin-amount-positive' : ( $amount < 0 ? 'mcr-admin-amount-negative' : '' );
 				?>
 				<tr>
-					<td><?php echo esc_html( date( 'Y-m-d H:i', strtotime( $row['created_at'] ) ) ); ?></td>
+					<td><?php echo esc_html( wp_date( "Y-m-d H:i", strtotime( $row['created_at'] ) ) ); ?></td>
 					<td><?php echo esc_html( $user_name ); ?> <small class="mcr-admin-meta">#<?php echo esc_html( $user_id ); ?></small></td>
 					<td><?php echo esc_html( $row['type'] ); ?></td>
 					<td class="mcr-admin-col-numeric <?php echo esc_attr( $amount_class ); ?>"><?php echo $amount_html; ?></td>
@@ -206,7 +255,7 @@ class TransactionsPage {
 		</table>
 
 		<?php
-		$total_pages = max( 1, ceil( $total / $per_page ) );
+		$total_pages = null === $total ? null : max( 1, (int) ceil( $total / $per_page ) );
 		$current_url = esc_url( admin_url( 'admin.php?page=mcr-transactions' ) . '&' . http_build_query( array_filter( $filters ) ) );
 		$pagination_links = array();
 
@@ -218,22 +267,26 @@ class TransactionsPage {
 			);
 		}
 
-		for ( $i = 1; $i <= $total_pages; $i++ ) {
-			if ( $i === $paged ) {
-				$pagination_links[] = sprintf(
-					'<span class="page-numbers current">%d</span>',
-					$i
-				);
-			} else {
-				$pagination_links[] = sprintf(
-					'<a class="page-numbers" href="%s">%d</a>',
-					add_query_arg( 'paged', $i, $current_url ),
-					$i
-				);
+		if ( null !== $total_pages ) {
+			for ( $i = 1; $i <= $total_pages; $i++ ) {
+				if ( $i === $paged ) {
+					$pagination_links[] = sprintf(
+						'<span class="page-numbers current">%d</span>',
+						$i
+					);
+				} else {
+					$pagination_links[] = sprintf(
+						'<a class="page-numbers" href="%s">%d</a>',
+						add_query_arg( 'paged', $i, $current_url ),
+						$i
+					);
+				}
 			}
 		}
 
-		if ( $paged < $total_pages ) {
+		$show_next = null === $total_pages ? $has_more : ( $paged < $total_pages );
+
+		if ( $show_next ) {
 			$pagination_links[] = sprintf(
 				'<a class="next page-numbers" href="%s">%s</a>',
 				add_query_arg( 'paged', $paged + 1, $current_url ),
@@ -263,6 +316,8 @@ class TransactionsPage {
 		}
 
 		check_admin_referer( 'mcr_admin_action' );
+
+		global $wpdb;
 
 		$current_user_id = get_current_user_id();
 		$can_view_users  = Capabilities::can_view_users();
@@ -297,13 +352,21 @@ class TransactionsPage {
 		}
 
 		if ( $filters['from'] ) {
-			$where[] = 'DATE(t.created_at) >= %s';
-			$args[]  = $filters['from'];
+			$from = trim( (string) $filters['from'] );
+			if ( 10 === strlen( $from ) ) {
+				$from .= ' 00:00:00';
+			}
+			$where[] = 't.created_at >= %s';
+			$args[]  = $from;
 		}
 
 		if ( $filters['to'] ) {
-			$where[] = 'DATE(t.created_at) <= %s';
-			$args[]  = $filters['to'];
+			$to = trim( (string) $filters['to'] );
+			if ( 10 === strlen( $to ) ) {
+				$to .= ' 23:59:59';
+			}
+			$where[] = 't.created_at <= %s';
+			$args[]  = $to;
 		}
 
 		if ( $filters['search'] ) {
@@ -312,15 +375,6 @@ class TransactionsPage {
 		}
 
 		$where_sql = '' === implode( ' ', $where ) ? '' : 'WHERE ' . implode( ' AND ', $where );
-
-		global $wpdb;
-		$rows = $wpdb->get_results( $wpdb->prepare(
-			"SELECT t.id, t.txn_uid, t.user_id, t.type, t.amount, t.balance_after, t.reason, t.source, t.created_at
-			 FROM {$wpdb->prefix}mcr_transactions t
-			 {$where_sql}
-			 ORDER BY t.id DESC",
-			$args
-		), \ARRAY_A );
 
 		$user_cache = array();
 
@@ -343,29 +397,69 @@ class TransactionsPage {
 			__( 'Txn UID', 'madara-coin-rewards' ),
 		);
 
-		$headers = array_map( 'self::escape_csv_cell', $headers );
+		// 'self::method' as a string callable is deprecated since PHP 8.2.
+		$headers = array_map( array( __CLASS__, 'escape_csv_cell' ), $headers );
 		fputcsv( $output, $headers );
 
-		foreach ( $rows as $row ) {
-			$user_id = absint( $row['user_id'] );
-			if ( ! isset( $user_cache[ $user_id ] ) ) {
-				$user = get_userdata( $user_id );
-				$user_cache[ $user_id ] = $user ? $user->display_name : sprintf( __( 'User #%d', 'madara-coin-rewards' ), $user_id );
+		$chunk_size = 5000;
+		$offset     = 0;
+
+		while ( true ) {
+			$chunk_args   = $args;
+			$chunk_args[] = $chunk_size;
+			$chunk_args[] = $offset;
+
+			$rows = $wpdb->get_results( $wpdb->prepare(
+				"SELECT t.id, t.txn_uid, t.user_id, t.type, t.amount, t.balance_after, t.reason, t.source, t.created_at
+				 FROM {$wpdb->prefix}mcr_transactions t
+				 {$where_sql}
+				 ORDER BY t.id DESC
+				 LIMIT %d OFFSET %d",
+				$chunk_args
+			), \ARRAY_A );
+
+			if ( empty( $rows ) ) {
+				break;
 			}
 
-			$row_out = array(
-				date( 'Y-m-d H:i:s', strtotime( $row['created_at'] ) ),
-				(int) $user_id,
-				$this->escape_csv_cell( $user_cache[ $user_id ] ),
-				self::escape_csv_cell( $row['type'] ),
-				(int) $row['amount'],
-				(int) $row['balance_after'],
-				self::escape_csv_cell( $row['reason'] ),
-				self::escape_csv_cell( $row['source'] ),
-				self::escape_csv_cell( $row['txn_uid'] ),
-			);
+			// In test doubles (such as Perf_WPDB), default_rows might be returned in full without LIMIT applied.
+			if ( count( $rows ) > $chunk_size ) {
+				$chunk_rows = array_slice( $rows, $offset, $chunk_size );
+			} else {
+				$chunk_rows = $rows;
+			}
 
-			fputcsv( $output, $row_out );
+			if ( empty( $chunk_rows ) ) {
+				break;
+			}
+
+			foreach ( $chunk_rows as $row ) {
+				$user_id = absint( $row['user_id'] );
+				if ( ! isset( $user_cache[ $user_id ] ) ) {
+					$user = get_userdata( $user_id );
+					$user_cache[ $user_id ] = $user ? $user->display_name : sprintf( __( 'User #%d', 'madara-coin-rewards' ), $user_id );
+				}
+
+				$row_out = array(
+					date( 'Y-m-d H:i:s', strtotime( $row['created_at'] ) ),
+					(int) $user_id,
+					self::escape_csv_cell( $user_cache[ $user_id ] ),
+					self::escape_csv_cell( $row['type'] ),
+					(int) $row['amount'],
+					(int) $row['balance_after'],
+					self::escape_csv_cell( $row['reason'] ),
+					self::escape_csv_cell( $row['source'] ),
+					self::escape_csv_cell( $row['txn_uid'] ),
+				);
+
+				fputcsv( $output, $row_out );
+			}
+
+			if ( count( $chunk_rows ) < $chunk_size ) {
+				break;
+			}
+
+			$offset += $chunk_size;
 		}
 
 		fclose( $output );

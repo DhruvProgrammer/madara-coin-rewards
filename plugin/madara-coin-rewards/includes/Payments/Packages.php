@@ -441,6 +441,62 @@ class Packages {
 	}
 
 	/**
+	 * Records a completed sale against the package stock limit.
+	 *
+	 * @param string $package_id Package id.
+	 * @return void
+	 */
+	public static function record_sale( $package_id ) {
+		$package_id = sanitize_key( (string) $package_id );
+
+		if ( '' === $package_id ) {
+			return;
+		}
+
+		$packages = self::raw_packages();
+
+		if ( ! isset( $packages[ $package_id ] ) || ! is_array( $packages[ $package_id ] ) ) {
+			return;
+		}
+
+		$package = $packages[ $package_id ];
+
+		$package['purchased'] = (int) ( $package['purchased'] ?? 0 ) + 1;
+
+		$packages[ $package_id ] = $package;
+
+		self::persist( $packages );
+	}
+
+	/**
+	 * Restores the package stock counter after a refund.
+	 *
+	 * @param string $package_id Package id.
+	 * @return void
+	 */
+	public static function record_refund( $package_id ) {
+		$package_id = sanitize_key( (string) $package_id );
+
+		if ( '' === $package_id ) {
+			return;
+		}
+
+		$packages = self::raw_packages();
+
+		if ( ! isset( $packages[ $package_id ] ) || ! is_array( $packages[ $package_id ] ) ) {
+			return;
+		}
+
+		$package = $packages[ $package_id ];
+
+		$package['purchased'] = max( 0, (int) ( $package['purchased'] ?? 0 ) - 1 );
+
+		$packages[ $package_id ] = $package;
+
+		self::persist( $packages );
+	}
+
+	/**
 	 * The next free sort_order (max + 1).
 	 *
 	 * @return int
@@ -520,4 +576,32 @@ class Packages {
 
 		return $package_out;
 	}
+}
+
+if ( function_exists( 'add_action' ) ) {
+	add_action(
+		'mcr_payment_credited',
+		static function ( $order, $result = array() ) {
+			if ( is_array( $result ) && ! empty( $result['duplicate'] ) ) {
+				return;
+			}
+
+			if ( is_array( $order ) && isset( $order['package_id'] ) ) {
+				\MCR\Payments\Packages::record_sale( (string) $order['package_id'] );
+			}
+		},
+		10,
+		2
+	);
+
+	add_action(
+		'mcr_payment_refunded',
+		static function ( $order ) {
+			if ( is_array( $order ) && isset( $order['package_id'] ) ) {
+				\MCR\Payments\Packages::record_refund( (string) $order['package_id'] );
+			}
+		},
+		10,
+		1
+	);
 }

@@ -137,6 +137,7 @@ class GenericS2S extends Provider {
 			array(
 				'id'     => sanitize_key( (string) $this->get_setting( 'placement_id', '' ) ),
 				'title'  => __( 'Rewarded video (S2S verified)', 'madara-coin-rewards' ),
+				'label'  => __( 'Rewarded video (S2S verified)', 'madara-coin-rewards' ),
 				'type'   => 'rewarded_video',
 				'params' => array(
 					'placement_id' => sanitize_key( (string) $this->get_setting( 'placement_id', '' ) ),
@@ -577,7 +578,7 @@ class GenericS2S extends Provider {
 			$wpdb->query(
 				$wpdb->prepare(
 					"UPDATE {$table}
-						SET status = 'pending', verified_at = '0000-00-00 00:00:00'
+						SET status = 'pending', verified_at = '1970-01-01 00:00:00'
 					 WHERE id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					absint( $session['id'] )
 				)
@@ -597,7 +598,7 @@ class GenericS2S extends Provider {
 			$wpdb->query(
 				$wpdb->prepare(
 					"UPDATE {$table}
-						SET status = 'pending', verified_at = '0000-00-00 00:00:00'
+						SET status = 'pending', verified_at = '1970-01-01 00:00:00'
 					 WHERE id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					absint( $session['id'] )
 				)
@@ -747,14 +748,22 @@ class GenericS2S extends Provider {
 				'id'          => 'signature_header',
 				'label'       => __( 'Signature header', 'madara-coin-rewards' ),
 				'type'        => 'text',
-				'description' => __( 'Header carrying the HMAC. Default: ' . self::DEFAULT_SIGNATURE_HEADER . '.', 'madara-coin-rewards' ),
+				'description' => sprintf(
+					/* translators: %s: default header */
+					__( 'Header carrying the HMAC. Default: %s.', 'madara-coin-rewards' ),
+					self::DEFAULT_SIGNATURE_HEADER
+				),
 				'default'     => self::DEFAULT_SIGNATURE_HEADER,
 			),
 			array(
 				'id'          => 'timestamp_header',
 				'label'       => __( 'Timestamp header', 'madara-coin-rewards' ),
 				'type'        => 'text',
-				'description' => __( 'Header carrying a unix timestamp for the 300 second replay window; leave empty to disable that check. Default: ' . self::DEFAULT_TIMESTAMP_HEADER . '.', 'madara-coin-rewards' ),
+				'description' => sprintf(
+					/* translators: %s: default header */
+					__( 'Header carrying a unix timestamp for the 300 second replay window; leave empty to disable that check. Default: %s.', 'madara-coin-rewards' ),
+					self::DEFAULT_TIMESTAMP_HEADER
+				),
 				'default'     => self::DEFAULT_TIMESTAMP_HEADER,
 			),
 			array(

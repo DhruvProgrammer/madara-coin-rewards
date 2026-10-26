@@ -115,6 +115,19 @@ if ( ! function_exists( 'delete_option' ) ) {
 		return true;
 	}
 }
+if ( ! function_exists( 'wp_date' ) ) {
+	/**
+	 * Date formatting stub.
+	 *
+	 * @param string   $format    Format.
+	 * @param int|null $timestamp Timestamp.
+	 * @param mixed    $timezone  Timezone.
+	 * @return string
+	 */
+	function wp_date( $format, $timestamp = null, $timezone = null ) {
+		return gmdate( $format, $timestamp ?? time() );
+	}
+}
 
 require_once dirname( __DIR__ ) . '/includes/Autoloader.php';
 \MCR\Autoloader::register( MCR_PLUGIN_DIR );
@@ -232,7 +245,7 @@ class Perf_WPDB extends MCR_Fake_WPDB {
 			}
 		}
 
-		return null;
+		return false;
 	}
 
 	/**

@@ -38,6 +38,8 @@ $mcr_claim_label = sprintf(
 	number_format_i18n( $mcr_total )
 );
 ?>
+<?php echo \MCR\Templates\Templates::part( 'wallet', $args ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+
 <section class="mcr-section" id="mcr-checkin-status" aria-labelledby="mcr-checkin-status-title">
 	<?php if ( ! $mcr_enabled ) : ?>
 		<?php
@@ -230,3 +232,5 @@ $mcr_claim_label = sprintf(
 		</p>
 	</div>
 </section>
+
+<?php echo \MCR\Templates\Templates::part( 'ads-panel', $args ); ?>

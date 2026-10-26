@@ -148,6 +148,39 @@ class StreakCalculator {
 	}
 
 	/**
+	 * Finds the next streak bonus above the current streak.
+	 *
+	 * @param int   $streak  Current streak.
+	 * @param array $bonuses Threshold => amount map.
+	 * @return array ['days' => int, 'threshold' => int, 'amount' => int]
+	 */
+	public static function next_bonus( $streak, $bonuses = array() ) {
+		$streak  = (int) $streak;
+		$bonuses = is_array( $bonuses ) ? $bonuses : array();
+
+		ksort( $bonuses );
+
+		foreach ( $bonuses as $threshold => $amount ) {
+			$threshold = (int) $threshold;
+			$amount    = (int) $amount;
+
+			if ( $threshold > $streak && $amount > 0 ) {
+				return array(
+					'days'      => $threshold - $streak,
+					'threshold' => $threshold,
+					'amount'    => $amount,
+				);
+			}
+		}
+
+		return array(
+			'days'      => 0,
+			'threshold' => 0,
+			'amount'    => 0,
+		);
+	}
+
+	/**
 	 * Normalizes a list of day keys.
 	 *
 	 * @param array|string $keys Raw keys.

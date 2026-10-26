@@ -70,14 +70,22 @@ class LogsPage {
 
 		$from = isset( $_GET['from'] ) ? sanitize_text_field( wp_unslash( $_GET['from'] ) ) : '';
 		if ( $from ) {
-			$where[] = 'DATE(t.created_at) >= %s';
-			$args[]  = $from;
+			$from_bound = trim( (string) $from );
+			if ( 10 === strlen( $from_bound ) ) {
+				$from_bound .= ' 00:00:00';
+			}
+			$where[] = 't.created_at >= %s';
+			$args[]  = $from_bound;
 		}
 
 		$to = isset( $_GET['to'] ) ? sanitize_text_field( wp_unslash( $_GET['to'] ) ) : '';
 		if ( $to ) {
-			$where[] = 'DATE(t.created_at) <= %s';
-			$args[]  = $to;
+			$to_bound = trim( (string) $to );
+			if ( 10 === strlen( $to_bound ) ) {
+				$to_bound .= ' 23:59:59';
+			}
+			$where[] = 't.created_at <= %s';
+			$args[]  = $to_bound;
 		}
 
 		$where_sql = 'WHERE ' . implode( ' AND ', $where );
@@ -137,7 +145,7 @@ class LogsPage {
 				$amount_class = $amount > 0 ? 'mcr-admin-amount-positive' : ( $amount < 0 ? 'mcr-admin-amount-negative' : '' );
 				?>
 				<tr>
-					<td><?php echo esc_html( date( 'Y-m-d H:i', strtotime( $row['created_at'] ) ) ); ?></td>
+					<td><?php echo esc_html( wp_date( "Y-m-d H:i", strtotime( $row['created_at'] ) ) ); ?></td>
 					<td><?php echo esc_html( $user_name ); ?> <small class="mcr-admin-meta">#<?php echo esc_html( $user_id ); ?></small></td>
 					<td><?php echo esc_html( $row['type'] ); ?></td>
 					<td class="mcr-admin-col-numeric <?php echo esc_attr( $amount_class ); ?>"><?php echo $amount_html; ?></td>

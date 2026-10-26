@@ -53,6 +53,55 @@ class Admin {
 		add_action( 'admin_menu', array( $admin, 'admin_menu' ) );
 		add_action( 'admin_init', array( $admin, 'admin_init' ) );
 		add_action( 'admin_notices', array( $admin, 'admin_notices' ) );
+
+		/*
+		 * The <body> carries the "mcr-admin" class on the plugin's own
+		 * screens, so the stylesheet can tell them apart from the rest
+		 * of the admin.
+		 */
+		add_filter( 'admin_body_class', array( $admin, 'admin_body_class' ) );
+	}
+
+	/**
+	 * Whether the request is one of the plugin's own admin screens.
+	 *
+	 * The top-level screen is "toplevel_page_mcr-rewards" and the
+	 * submenu screens are "mcr-rewards_page_mcr-dashboard" and so on.
+	 *
+	 * @return bool
+	 */
+	public static function is_plugin_screen() {
+		if ( ! function_exists( 'get_current_screen' ) ) {
+			return false;
+		}
+
+		$screen = get_current_screen();
+
+		if ( ! is_object( $screen ) || empty( $screen->id ) ) {
+			return false;
+		}
+
+		$id = (string) $screen->id;
+
+		if ( 'toplevel_page_' . self::MENU_SLUG === $id ) {
+			return true;
+		}
+
+		return 0 === strpos( $id, self::MENU_SLUG . '_page_mcr-' );
+	}
+
+	/**
+	 * Adds the "mcr-admin" class to the <body> on the plugin's screens.
+	 *
+	 * @param string $classes The body classes.
+	 * @return string
+	 */
+	public function admin_body_class( $classes ) {
+		if ( ! self::is_plugin_screen() ) {
+			return $classes;
+		}
+
+		return trim( (string) $classes . ' mcr-admin' );
 	}
 
 	/**
@@ -61,14 +110,19 @@ class Admin {
 	 * @return void
 	 */
 	public function admin_menu() {
-		if ( ! Capabilities::can_manage_settings() ) {
+		/*
+		 * A user who may manage the coins has to be able to REACH the
+		 * screens. The menu used to require the settings capability, so
+		 * a coin manager saw no menu at all.
+		 */
+		if ( ! Capabilities::can_manage_settings() && ! Capabilities::can_manage_coins() ) {
 			return;
 		}
 
 		add_menu_page(
 			__( 'Madara Coins', 'madara-coin-rewards' ),
 			__( 'Madara Coins', 'madara-coin-rewards' ),
-			Capabilities::MANAGE_SETTINGS,
+			Capabilities::MANAGE_COINS,
 			self::MENU_SLUG,
 			array( $this, 'render_dashboard' ),
 			'dashicons-chart-line',
@@ -156,7 +210,19 @@ class Admin {
 			'mcr_settings',
 			array(
 				'sanitize_callback' => array( 'MCR\Settings', 'sanitize' ),
+				/*
+				 * The group is saved by the Settings API, which checks
+				 * this capability. Without it only manage_options users
+				 * could save the form, and the plugin's own capability
+				 * was ignored.
+				 */
+				'capability'        => \MCR\Capabilities::MANAGE_SETTINGS,
 			)
+		);
+
+		add_filter(
+			'option_page_capability_mcr_settings_group',
+			array( $this, 'filter_settings_capability' )
 		);
 
 		add_action(
@@ -177,6 +243,15 @@ class Admin {
 	private function register_settings_sections() {
 		$settings_page = $this->settings_page();
 		$settings_page->register_sections_and_fields();
+	}
+
+	/**
+	 * Returns the capability required to save the settings form.
+	 *
+	 * @return string
+	 */
+	public function filter_settings_capability() {
+		return \MCR\Capabilities::MANAGE_SETTINGS;
 	}
 
 	/**
@@ -227,6 +302,12 @@ class Admin {
 				break;
 			case 'mcr_reconcile':
 				$this->handle_reconcile();
+				break;
+			case 'mcr_reconcile_all':
+				$this->handle_reconcile_all();
+				break;
+			case 'mcr_export_settings':
+				$this->handle_export_settings();
 				break;
 			case 'mcr_reset_user':
 				$this->handle_reset_user();
@@ -359,6 +440,63 @@ class Admin {
 		}
 
 		$this->redirect_back();
+	}
+
+	/**
+	 * Recomputes all user balances from the ledger (admin repair tool).
+	 *
+	 * @return void
+	 */
+	private function handle_reconcile_all() {
+		if ( ! Capabilities::can_manage_coins() ) {
+			wp_die( __( 'Insufficient permissions.', 'madara-coin-rewards' ) );
+		}
+
+		global $wpdb;
+		$user_ids = $wpdb->get_col(
+			'SELECT DISTINCT user_id FROM ' . $wpdb->prefix . 'mcr_balances UNION SELECT DISTINCT user_id FROM ' . $wpdb->prefix . 'mcr_transactions'
+		);
+
+		$fixed_count = 0;
+		if ( ! empty( $user_ids ) ) {
+			$ledger = Ledger::instance();
+			foreach ( $user_ids as $uid ) {
+				$res = $ledger->reconcile_user( absint( $uid ) );
+				if ( ! is_wp_error( $res ) && ! empty( $res['fixed'] ) ) {
+					$fixed_count++;
+				}
+			}
+		}
+
+		$this->set_notice(
+			sprintf(
+				/* translators: 1: fixed count, 2: total users */
+				__( 'Reconciliation complete. Fixed %1$d of %2$d user balances.', 'madara-coin-rewards' ),
+				$fixed_count,
+				count( (array) $user_ids )
+			)
+		);
+
+		$this->redirect_back();
+	}
+
+	/**
+	 * Exports plugin settings as a JSON file.
+	 *
+	 * @return void
+	 */
+	private function handle_export_settings() {
+		if ( ! Capabilities::can_manage_settings() ) {
+			wp_die( __( 'Insufficient permissions.', 'madara-coin-rewards' ) );
+		}
+
+		$settings = Settings::all();
+		$json     = wp_json_encode( $settings, \JSON_PRETTY_PRINT );
+
+		header( 'Content-Type: application/json; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename="mcr-settings-' . gmdate( 'Y-m-d' ) . '.json"' );
+		echo $json; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		exit;
 	}
 
 	/**

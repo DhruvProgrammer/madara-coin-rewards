@@ -27,6 +27,13 @@ class CheckIn {
 	private static $instance = null;
 
 	/**
+	 * Per-request memo of status() results, keyed by user id.
+	 *
+	 * @var array
+	 */
+	private $status_cache = array();
+
+	/**
 	 * Returns the shared instance.
 	 *
 	 * @return CheckIn
@@ -49,6 +56,11 @@ class CheckIn {
 		global $wpdb;
 
 		$user_id = absint( $user_id );
+
+		if ( isset( $this->status_cache[ $user_id ] ) ) {
+			return $this->status_cache[ $user_id ];
+		}
+
 		$clock   = Container::instance()->clock();
 		$today   = $clock->today_key();
 
@@ -91,7 +103,7 @@ class CheckIn {
 		} else {
 			$defaults['streak']         = $this->current_streak( $user_id );
 			$defaults['bonus_amount']   = StreakCalculator::calculateBonus(
-				$defaults['streak'] + 1,
+				$defaults['streak'],
 				Settings::get( 'checkin.bonuses', array() ),
 				(int) Settings::get( 'checkin.max_bonus', 0 )
 			);
@@ -100,6 +112,8 @@ class CheckIn {
 
 		$defaults['base_claimable'] = $defaults['total_amount'] > 0;
 		$defaults['calendar']       = $this->calendar( $user_id );
+
+		$this->status_cache[ $user_id ] = $defaults;
 
 		return $defaults;
 	}
@@ -198,8 +212,28 @@ class CheckIn {
 			return new \WP_Error( 'mcr_feature_disabled', __( 'Daily check-in is currently disabled.', 'madara-coin-rewards' ) );
 		}
 
+		$rate_limit = (int) Settings::get( 'security.rate_limit_checkin', 0 );
+
+		if ( $rate_limit > 0 ) {
+			$rate_key  = 'mcr_rate_checkin_' . $user_id;
+			$rate_data = get_transient( $rate_key );
+
+			if ( ! is_array( $rate_data ) ) {
+				$rate_data = array( 'count' => 0 );
+			}
+
+			if ( (int) $rate_data['count'] >= $rate_limit ) {
+				return new \WP_Error( 'mcr_rate_limited', __( 'Too many check-in attempts. Please try again later.', 'madara-coin-rewards' ), array( 'status' => 429 ) );
+			}
+
+			$rate_data['count'] = (int) $rate_data['count'] + 1;
+			set_transient( $rate_key, $rate_data, 3600 );
+		}
+
 		$clock = Container::instance()->clock();
 		$today = $clock->today_key();
+
+		$this->reset_status_cache( $user_id );
 
 		$table = $wpdb->prefix . 'mcr_checkins';
 
@@ -291,7 +325,7 @@ class CheckIn {
 		 * removed again so the user can retry - the alternative is coins
 		 * paid for a day that was never recorded.
 		 */
-		$result = $policy->grant( $user_id, $evaluation );
+		$result = $policy->grant( $user_id, $evaluation, array( 'ref_id' => $checkin_id ) );
 
 		if ( is_wp_error( $result ) ) {
 			$data = $result->get_error_data();
@@ -345,6 +379,21 @@ class CheckIn {
 		$result['message']    = Settings::get( 'checkin.success_message', __( 'Daily reward claimed! Come back tomorrow to keep your streak.', 'madara-coin-rewards' ) );
 
 		return $result;
+	}
+
+	/**
+	 * Clears the memoised status() cache.
+	 *
+	 * @param int|null $user_id User id to invalidate, or null for all.
+	 * @return void
+	 */
+	public function reset_status_cache( $user_id = null ) {
+		if ( null === $user_id ) {
+			$this->status_cache = array();
+			return;
+		}
+
+		unset( $this->status_cache[ absint( $user_id ) ] );
 	}
 
 	/**

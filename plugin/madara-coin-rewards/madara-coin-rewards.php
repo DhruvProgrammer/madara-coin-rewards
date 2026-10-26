@@ -69,8 +69,51 @@ function mcr_bootstrap() {
 }
 add_action( 'plugins_loaded', 'mcr_bootstrap', 5 );
 
-register_activation_hook( __FILE__, array( 'MCR\Installer', 'activate' ) );
-register_deactivation_hook( __FILE__, array( 'MCR\Installer', 'deactivate' ) );
+/**
+ * Procedural activation callback.
+ *
+ * Explicitly requires Installer.php and supports multisite network-wide activation.
+ *
+ * @param bool $network_wide Whether the plugin is being activated network-wide.
+ * @return void
+ */
+function mcr_activate( $network_wide = false ) {
+	require_once MCR_PLUGIN_DIR . 'includes/Installer.php';
+
+	if ( function_exists( 'is_multisite' ) && is_multisite() && $network_wide ) {
+		$site_ids = get_sites(
+			array(
+				'fields' => 'ids',
+				'number' => 0,
+			)
+		);
+
+		foreach ( (array) $site_ids as $site_id ) {
+			switch_to_blog( (int) $site_id );
+			MCR\Installer::activate();
+			restore_current_blog();
+		}
+
+		return;
+	}
+
+	MCR\Installer::activate();
+}
+
+/**
+ * Procedural deactivation callback.
+ *
+ * Explicitly requires Installer.php.
+ *
+ * @return void
+ */
+function mcr_deactivate() {
+	require_once MCR_PLUGIN_DIR . 'includes/Installer.php';
+	MCR\Installer::deactivate();
+}
+
+register_activation_hook( __FILE__, 'mcr_activate' );
+register_deactivation_hook( __FILE__, 'mcr_deactivate' );
 
 /**
  * Renders an admin notice when PHP is too old.

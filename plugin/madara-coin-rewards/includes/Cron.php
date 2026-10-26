@@ -65,7 +65,14 @@ class Cron {
 	 * @return void
 	 */
 	public static function run_daily() {
+		global $wpdb;
+
 		$expired = Payments\Orders::instance()->expireStale();
+
+		$table = $wpdb->prefix . 'mcr_ad_sessions';
+		$wpdb->query(
+			"DELETE FROM {$table} WHERE ( status IN ('expired', 'credited') AND verified_at < NOW() - INTERVAL 2 DAY ) OR ( status = 'pending' AND expires_at < NOW() - INTERVAL 1 DAY )" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		);
 
 		/**
 		 * Fires during the plugin's daily maintenance.
@@ -89,7 +96,7 @@ class Cron {
 		// a session hours later.
 		$wpdb->query(
 			$wpdb->prepare(
-				"UPDATE {$table} SET status = 'expired' WHERE status = 'pending' AND expires_at < %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"UPDATE {$table} SET status = 'expired' WHERE status = 'pending' AND expires_at < %s LIMIT 500", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				gmdate( 'Y-m-d H:i:s' )
 			)
 		);

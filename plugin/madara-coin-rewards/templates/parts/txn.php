@@ -32,7 +32,7 @@ $mcr_show_balance = ! isset( $args['show_balance'] ) || $args['show_balance'];
 $mcr_amount_text = \MCR\Templates\Templates::amount_text( $mcr_amount );
 ?>
 <li class="mcr-txn">
-	<span class="mcr-txn__icon mcr-txn__icon--<?php echo esc_attr( $mcr_credit ? 'credit' : 'debit' ); ?>" aria-hidden="true"><?php echo esc_html( $mcr_credit ? '&#43;' : '&#8722;' ); ?></span>
+	<span class="mcr-txn__icon mcr-txn__icon--<?php echo esc_attr( $mcr_credit ? 'credit' : 'debit' ); ?>" aria-hidden="true"><?php echo esc_html( $mcr_credit ? '+' : '−' ); ?></span>
 	<div class="mcr-txn__main">
 		<span class="mcr-txn__reason"><?php echo esc_html( $mcr_reason ); ?></span>
 		<span class="mcr-txn__meta"><?php echo esc_html( $mcr_meta ); ?></span>

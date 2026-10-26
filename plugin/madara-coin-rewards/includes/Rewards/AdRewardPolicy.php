@@ -235,6 +235,14 @@ class AdRewardPolicy {
 			);
 		}
 
+		if ( ! isset( $session['user_id'], $session['status'], $session['expires_at'] ) ) {
+			return new \WP_Error(
+				'mcr_session_invalid',
+				__( 'The ad session is no longer valid.', 'madara-coin-rewards' ),
+				array( 'status' => 409 )
+			);
+		}
+
 		if ( (int) $session['user_id'] !== $user_id ) {
 			return new \WP_Error(
 				'mcr_session_mismatch',
@@ -243,7 +251,7 @@ class AdRewardPolicy {
 			);
 		}
 
-		if ( 'verified' === $session['status'] ) {
+		if ( in_array( (string) $session['status'], array( 'verified', 'credited' ), true ) ) {
 			return new \WP_Error(
 				'mcr_already_verified',
 				__( 'This ad reward has already been claimed.', 'madara-coin-rewards' ),
@@ -261,7 +269,7 @@ class AdRewardPolicy {
 
 		$expires = strtotime( $session['expires_at'] . ' UTC' );
 
-		if ( $expires && $expires < $this->clock->now()->getTimestamp() ) {
+		if ( false === $expires || $expires <= 0 || $expires < $this->clock->now()->getTimestamp() ) {
 			return new WP_Error(
 				'mcr_session_expired',
 				__( 'The ad session has expired. Please watch the ad again.', 'madara-coin-rewards' ),

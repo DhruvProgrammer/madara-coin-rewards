@@ -32,6 +32,14 @@
  * =============================================================================
  */
 
+/* theme bridge. Madara prints --primary-color/--secondary-color only when
+   "site_custom_colors" is on (css/custom.css.php:166-171); --border-light-color
+   is not emitted by this build, so the fallback is what really applies. */
+:root {
+  --mcr-accent: var(--primary-color, #eb3349);
+  --mcr-accent-2: var(--secondary-color, #f45c43);
+}
+
 /* === 01 TOKENS: LIGHT (default) ===========================================
    Verified Madara 2.2.7.1 tokens (docs/_CONTEXT.md section 1). Override through
    the theme bridge at the end of this block, never by editing the raw values. */
@@ -75,7 +83,7 @@
   /* coin gold family, derived from @star-color #ffd900 */
   --mcr-coin-100: #fff6bf; --mcr-coin-200: #ffe45c; --mcr-coin-300: #ffd900;
   --mcr-coin-400: #f2b705; --mcr-coin-500: #c98a04; --mcr-coin-600: #b8790a;
-  --mcr-coin-ink: #6b4a00; --mcr-coin-glow: rgba(255,217,0,.35); --mcr-coin-size: 16px;
+  --mcr-coin-ink: #5e4000; --mcr-coin-glow: rgba(255,217,0,.35); --mcr-coin-size: 16px;
   /* semantic tints (pre-mixed: no color-mix dependency) */
   --mcr-success-bg: #eaf6ea; --mcr-info-bg: #e8f7fb; --mcr-warning-bg: #fdf3e6;
   --mcr-danger-bg: #fbeceb; --mcr-accent-bg: #fdeaec; --mcr-neutral-bg: #efefef;
@@ -88,11 +96,6 @@
      (less/header.less:915) and submenus 9999, so overlays start above 100000. */
   --mcr-tap: 44px; --mcr-duration: 200ms; --mcr-ease: cubic-bezier(.2,.6,.3,1);
   --mcr-z-toast: 100100; --mcr-z-modal: 100200;
-  /* theme bridge. Madara prints --primary-color/--secondary-color only when
-     "site_custom_colors" is on (css/custom.css.php:166-171); --border-light-color
-     is not emitted by this build, so the fallback is what really applies. */
-  --mcr-accent: var(--primary-color, #eb3349);
-  --mcr-accent-2: var(--secondary-color, #f45c43);
   /* Text-bearing accent. The theme's #eb3349 is 4.12:1 against white, which
      fails WCAG AA at 14px, so anything that CARRIES TEXT uses this darker
      shade (5.51:1). --mcr-accent stays for decoration, borders and focus
@@ -129,7 +132,7 @@ body.mcr-scheme-dark .mcr-scope, body.mcr-scheme-dark .mcr-portal {
   --mcr-shadow-sm: 0 1px 2px rgba(0,0,0,.5); --mcr-shadow-md: 0 6px 18px rgba(0,0,0,.55);
   --mcr-shadow-lg: 0 18px 40px rgba(0,0,0,.65); --mcr-coin-glow: rgba(255,217,0,.22);
   --mcr-link: #f45c43; --mcr-link-hover: #ffd900; /* accent stays legible on #262626 */
-  --mcr-accent-text: #f45c43; --mcr-accent-text-hover: #ffd900;
+  --mcr-accent-text: #b32338; --mcr-accent-text-hover: #ffd900;
 }
 
 /* === 03 TOKENS: prefers-color-scheme fallback =============================
@@ -887,24 +890,6 @@ body.mcr-modal-open { overflow: hidden; }
 .mcr-grid--packages { --mcr-cols: 1; }
 .mcr-grid--quick { --mcr-cols: 1; }
 
-/* Admin-selected column count (appearance.{page}.columns). Applied ONLY to the
-   content grid; it never overrides the responsive recipes above on mobile, and
-   it never touches .mcr-grid--stats (2up/4up is fixed for legibility).
-   Emitted by the template as an extra class: mcr-grid--cols-3 */
-@media (max-width: 768px) {
-  .mcr-grid--cols-2, .mcr-grid--cols-3, .mcr-grid--cols-4 { --mcr-cols: 1; }
-}
-
-@media (min-width: 769px) and (max-width: 991px) {
-  .mcr-grid--cols-2, .mcr-grid--cols-3, .mcr-grid--cols-4 { --mcr-cols: 2; }
-}
-
-@media (min-width: 992px) {
-  .mcr-grid--cols-2 { --mcr-cols: 2; }
-  .mcr-grid--cols-3 { --mcr-cols: 3; }
-  .mcr-grid--cols-4 { --mcr-cols: 4; }
-}
-
 @media (min-width: 768px) {
   .mcr-grid--cards { --mcr-cols: 2; }
   .mcr-grid--quick { --mcr-cols: 3; }
@@ -924,6 +909,24 @@ body.mcr-modal-open { overflow: hidden; }
 @media (min-width: 1200px) {
   .mcr-grid--packages { --mcr-cols: 4; }
   .mcr-gap-lg { --mcr-gap: 30px; }
+}
+
+/* Admin-selected column count (appearance.{page}.columns). Applied ONLY to the
+   content grid; it never overrides the responsive recipes above on mobile, and
+   it never touches .mcr-grid--stats (2up/4up is fixed for legibility).
+   Emitted by the template as an extra class: mcr-grid--cols-3 */
+@media (max-width: 768px) {
+  .mcr-grid--cols-2, .mcr-grid--cols-3, .mcr-grid--cols-4 { --mcr-cols: 1; }
+}
+
+@media (min-width: 769px) and (max-width: 991px) {
+  .mcr-grid--cols-2, .mcr-grid--cols-3, .mcr-grid--cols-4 { --mcr-cols: 2; }
+}
+
+@media (min-width: 992px) {
+  .mcr-grid--cols-2 { --mcr-cols: 2; }
+  .mcr-grid--cols-3 { --mcr-cols: 3; }
+  .mcr-grid--cols-4 { --mcr-cols: 4; }
 }
 
 @media (max-width: 992px) {
@@ -1016,4 +1019,26 @@ body.mcr-modal-open { overflow: hidden; }
   .mcr-toast, .mcr-amount.is-updated .mcr-amount__value { animation: none; }
   .mcr-progress__bar, .mcr-card, .mcr-package, .mcr-btn, .mcr-tabs__tab { transition: none; }
   .mcr-card--interactive:hover, .mcr-package:hover { transform: none; }
+}
+
+/* -------------------------------------------------------------------------
+ * Long user supplied text.
+ *
+ * A transaction reason, a package name or a display name is arbitrary
+ * text. Without an overflow rule a single long word pushes the whole
+ * page sideways on a narrow screen.
+ * ---------------------------------------------------------------------- */
+
+.mcr-scope .mcr-card__body,
+.mcr-scope .mcr-table td,
+.mcr-scope .mcr-table th,
+.mcr-scope .mcr-muted,
+.mcr-scope .mcr-strong,
+.mcr-scope p,
+.mcr-scope li,
+.mcr-admin .mcr-card__body,
+.mcr-admin td,
+.mcr-admin th {
+	overflow-wrap: break-word;
+	word-wrap: break-word;
 }

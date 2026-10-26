@@ -909,21 +909,7 @@ class Stripe extends Gateway {
 	 * @return string
 	 */
 	public static function encrypt_secret( $plain ) {
-		$plain = (string) $plain;
-
-		if ( '' === $plain || ! function_exists( 'sodium_crypto_secretbox' ) ) {
-			return $plain;
-		}
-
-		try {
-			$key    = hash( 'sha256', wp_salt( 'auth' ), true );
-			$nonce  = random_bytes( SODIUM_CRYPTO_SECRETBOX_NONCEBYTES );
-			$cipher = sodium_crypto_secretbox( $plain, $nonce, $key );
-
-			return self::SECRET_PREFIX . base64_encode( $nonce . $cipher );
-		} catch ( \Throwable $e ) {
-			return $plain;
-		}
+		return \MCR\Support\Secrets::encrypt( $plain );
 	}
 
 	/**
@@ -935,6 +921,16 @@ class Stripe extends Gateway {
 	 * @return string Decrypted secret, '' when undecryptable.
 	 */
 	public static function decrypt_secret( $stored ) {
+		return \MCR\Support\Secrets::decrypt( $stored );
+	}
+
+	/**
+	 * The legacy implementation, kept only so the diff stays readable.
+	 *
+	 * @param string $stored Stored value.
+	 * @return string
+	 */
+	private static function decrypt_secret_legacy( $stored ) {
 		$stored = trim( (string) $stored );
 
 		if ( '' === $stored ) {
@@ -997,7 +993,7 @@ class Stripe extends Gateway {
 				'id'          => 'webhook_secret',
 				'label'       => __( 'Webhook signing secret', 'madara-coin-rewards' ),
 				'type'        => 'password',
-				'description' => __( 'Create a webhook endpoint in Stripe pointing to ' . '/wp-json/mcr/v1/stripe/webhook' . ' with events checkout.session.completed, checkout.session.expired and charge.refunded, then paste its Signing secret (whsec_...).', 'madara-coin-rewards' ),
+				'description' => __( 'Create a webhook endpoint in Stripe pointing to /wp-json/mcr/v1/stripe/webhook with events checkout.session.completed, checkout.session.expired and charge.refunded, then paste its Signing secret (whsec_...).', 'madara-coin-rewards' ),
 			),
 			array(
 				'id'          => 'currency',

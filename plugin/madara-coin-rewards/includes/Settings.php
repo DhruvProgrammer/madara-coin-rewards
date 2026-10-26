@@ -9,6 +9,9 @@ namespace MCR;
 
 defined( 'ABSPATH' ) || exit;
 
+use MCR\Gateways\Gateway;
+use MCR\AdProviders\Provider;
+
 /**
  * Typed access to the plugin's settings array.
  */
@@ -50,7 +53,7 @@ class Settings {
 			'checkin.streak_enabled'           => 'on',
 			'checkin.timezone_source'          => 'site',
 			'checkin.require_login'            => 'on',
-			'checkin.success_message'          => __( 'Daily reward claimed! Come back tomorrow to keep your streak.', 'madara-coin-rewards' ),
+			'checkin.success_message'          => self::text( 'Daily reward claimed! Come back tomorrow to keep your streak.' ),
 
 			// Ad rewards.
 			'ads.coins_per_ad'                 => 5,
@@ -68,7 +71,7 @@ class Settings {
 			'purchase.order_expiry_minutes'    => 60,
 			'purchase.gateway'                 => 'manual',
 			'purchase.auto_credit'             => 'on',
-			'purchase.success_message'         => __( 'Your coins have been added to your account.', 'madara-coin-rewards' ),
+			'purchase.success_message'         => self::text( 'Your coins have been added to your account.' ),
 
 			// Packages.
 			'packages'                         => array(),
@@ -102,6 +105,19 @@ class Settings {
 			// Notifications.
 			'notify.toast_on_change'           => 'on',
 			'notify.show_login_prompt'         => 'on',
+
+			// Uninstall. The opt-in has to be a KNOWN setting, or the
+			// sanitiser drops it and the uninstall handler can never
+			// purge anything.
+			'uninstall.purge_data'             => 'off',
+
+			// Uninstall.
+			//
+			// uninstall.php reads this key, so it has to exist as a typed
+			// default here: otherwise the sanitize callback would have no
+			// type inference for it and the purge flag could never be
+			// stored through the Tools screen.
+			'uninstall.purge_data'             => 'off',
 		);
 
 		/**
@@ -110,6 +126,31 @@ class Settings {
 		 * @param array $defaults Default settings.
 		 */
 		return apply_filters( 'mcr_default_settings', $defaults );
+	}
+
+	/**
+	 * Translates a default string.
+	 *
+	 * The defaults are built while the plugin boots, which is BEFORE the
+	 * init action, so the text domain is not loaded yet. Calling a
+	 * translation function at that point makes WordPress raise
+	 * "_load_textdomain_just_in_time was called incorrectly" on every
+	 * request, and the string is never translated.
+	 *
+	 * @param string $source The source string.
+	 * @return string
+	 */
+	private static function text( $source ) {
+		if ( function_exists( 'did_action' ) && did_action( 'init' ) ) {
+			if ( 'Daily reward claimed! Come back tomorrow to keep your streak.' === $source ) {
+				return __( 'Daily reward claimed! Come back tomorrow to keep your streak.', 'madara-coin-rewards' );
+			}
+			if ( 'Your coins have been added to your account.' === $source ) {
+				return __( 'Your coins have been added to your account.', 'madara-coin-rewards' );
+			}
+		}
+
+		return $source;
 	}
 
 	/**
@@ -248,20 +289,60 @@ class Settings {
 	/**
 	 * Sanitizes the whole settings array.
 	 *
-	 * @param mixed $input Raw submitted settings.
+	 * THE STORED VALUE IS THE BASELINE. WordPress calls this callback with
+	 * exactly the fields one settings screen submitted (packages screen,
+	 * tools screen, gateway field...) and replaces the whole option with
+	 * the return value. Starting from the submitted array instead would
+	 * erase every key that form did not render, which is how a settings
+	 * save silently deletes the coin packages, the page assignments and
+	 * the gateway/provider secrets.
+	 *
+	 * The payload may mix both shapes:
+	 *  - flat dotted keys ('checkin.base_amount' => 10) as posted by the
+	 *    WP settings forms, and
+	 *  - nested shapes ('gateways' => array( 'stripe' => array(...))) as
+	 *    handed over by programmatic updates.
+	 *
+	 * Gateway (`gateways.{id}`) and provider (`ads.providers.{id}`)
+	 * subtrees are delegated to their own sanitizers so secret values are
+	 * always passed through Secrets::encrypt() before they reach storage.
+	 *
+	 * @param mixed  $input Raw submitted settings.
 	 * @return array
 	 */
 	public static function sanitize( $input ) {
 		$input    = is_array( $input ) ? $input : array();
 		$defaults = self::defaults();
-		$clean    = array();
+		$stored   = get_option( self::OPTION, array() );
 
-		foreach ( $defaults as $key => $default ) {
-			if ( ! array_key_exists( $key, $input ) ) {
+		if ( ! is_array( $stored ) ) {
+			$stored = array();
+		}
+
+		$clean = array();
+
+		// 1. Keep every stored setting, re-sanitizing it against the type
+		//    it is stored as. A partial form submission cannot remove it.
+		foreach ( $stored as $key => $value ) {
+			$key = (string) $key;
+
+			if ( ! preg_match( self::KEY_PATTERN, $key ) ) {
 				continue;
 			}
 
-			$clean[ $key ] = self::sanitizeValue( $key, $input[ $key ], $default );
+			$clean[ $key ] = self::sanitizeStoredValue( $key, $value );
+		}
+
+		// 2. Apply the submitted values, flattened into dotted keys, over
+		//    the stored baseline.
+		foreach ( self::flatten_input( $input ) as $key => $value ) {
+			$key = (string) $key;
+
+			if ( ! preg_match( self::KEY_PATTERN, $key ) ) {
+				continue;
+			}
+
+			$clean[ $key ] = self::sanitizeSubmittedValue( $key, $value, $clean, $defaults );
 		}
 
 		/**
@@ -274,6 +355,153 @@ class Settings {
 	}
 
 	/**
+	 * The regex an accepted settings key must match.
+	 *
+	 * keep_note: sanitize_key() strips the dots a dotted key needs, so the
+	 * keys are validated against this pattern instead.
+	 */
+	const KEY_PATTERN = '/^[a-z0-9_\-\.]+$/i';
+
+	/**
+	 * Re-sanitizes one already-stored setting.
+	 *
+	 * @param string $key   Dot-notation key.
+	 * @param mixed  $value Stored value.
+	 * @return mixed
+	 */
+	private static function sanitizeStoredValue( $key, $value ) {
+		$defaults = self::defaults();
+
+		if ( 0 === strpos( $key, 'gateways.' ) ) {
+			$gateway_id = sanitize_key( substr( $key, 9 ) );
+
+			if ( ! is_array( $value ) ) {
+				return array();
+			}
+
+			return Gateway::sanitize_settings( $gateway_id, $value, $value );
+		}
+
+		if ( 0 === strpos( $key, 'ads.providers.' ) ) {
+			$provider_id = sanitize_key( substr( $key, 14 ) );
+
+			if ( ! is_array( $value ) ) {
+				return array();
+			}
+
+			return Provider::sanitize_settings( $provider_id, $value, $value );
+		}
+
+		if ( array_key_exists( $key, $defaults ) ) {
+			return self::sanitizeValue( $key, $value, $defaults[ $key ] );
+		}
+
+		// Unknown stored keys (set by integrations or earlier versions)
+		// are preserved as they are.
+		return $value;
+	}
+
+	/**
+	 * Sanitizes one setting value that the current submit carried.
+	 *
+	 * @param string $key      Dot-notation key.
+	 * @param mixed  $value    Raw submitted value.
+	 * @param array  $clean    The sanitized array so far (stored baseline).
+	 * @param array  $defaults Default settings for type inference.
+	 * @return mixed
+	 */
+	private static function sanitizeSubmittedValue( $key, $value, array &$clean, array $defaults ) {
+		if ( 0 === strpos( $key, 'gateways.' ) ) {
+			$gateway_id = sanitize_key( substr( $key, 9 ) );
+
+			if ( '' === $gateway_id || ! is_array( $value ) ) {
+				// Malformed gateway payload: fall back to the stored value.
+				return isset( $clean[ $key ] ) ? $clean[ $key ] : array();
+			}
+
+			$stored = isset( $clean[ $key ] ) && is_array( $clean[ $key ] ) ? $clean[ $key ] : array();
+
+			return Gateway::sanitize_settings( $gateway_id, $value, $stored );
+		}
+
+		if ( 0 === strpos( $key, 'ads.providers.' ) ) {
+			$provider_id = sanitize_key( substr( $key, 14 ) );
+
+			if ( '' === $provider_id || ! is_array( $value ) ) {
+				return isset( $clean[ $key ] ) ? $clean[ $key ] : array();
+			}
+
+			$stored = isset( $clean[ $key ] ) && is_array( $clean[ $key ] ) ? $clean[ $key ] : array();
+
+			return Provider::sanitize_settings( $provider_id, $value, $stored );
+		}
+
+		if ( array_key_exists( $key, $defaults ) ) {
+			return self::sanitizeValue( $key, $value, $defaults[ $key ] );
+		}
+
+		// An unknown key submitted out of nowhere: store nothing unsanized.
+		return self::sanitize_setting_tree( $value );
+	}
+
+	/**
+	 * Folds BOTH input shapes into dotted keys.
+	 *
+	 * Every form in this plugin posts flat dotted field names, so PHP
+	 * already hands in 'gateways.stripe' => array(...). A wrapper that
+	 * builds the settings programmatically may however hand in
+	 * 'gateways' => array( 'stripe' => array(...) ). Only the gateway and
+	 * ad-provider paths behave like containers; arrays everywhere else
+	 * (packages, per-provider subtrees) are kept nested, because those
+	 * sub-arrays ARE the value.
+	 *
+	 * @param array  $data  Raw input.
+	 * @param string $prefix Internal prefix (do not pass).
+	 * @return array<string,mixed>
+	 */
+	private static function flatten_input( array $data, $prefix = '' ) {
+		$flat = array();
+
+		foreach ( $data as $key => $value ) {
+			$key       = (string) $key;
+			$composite = '' === $prefix ? $key : $prefix . '.' . $key;
+
+			if ( is_array( $value ) && self::is_container_path( $composite ) ) {
+				$flat += self::flatten_input( $value, $composite );
+				continue;
+			}
+
+			$flat[ $composite ] = $value;
+		}
+
+		return $flat;
+	}
+
+	/**
+	 * Whether a composite input path keeps folding its children upward.
+	 *
+	 * @param string $composite The flattened key built so far.
+	 * @return bool
+	 */
+	private static function is_container_path( $composite ) {
+		return in_array( (string) $composite, array( 'gateways', 'ads', 'ads.providers' ), true );
+	}
+
+	/**
+	 * Defensively sanitizes a value submitted under an unknown key.
+	 *
+	 * @param mixed $value Raw value.
+	 * @return mixed
+	 */
+	private static function sanitize_setting_tree( $value ) {
+		if ( is_array( $value ) ) {
+			return array_map( array( __CLASS__, 'sanitize_setting_tree' ), $value );
+		}
+
+		return sanitize_text_field( (string) $value );
+	}
+
+	/**
 	 * Sanitizes a single setting value.
 	 *
 	 * @param string $key     Dot-notation key.
@@ -282,6 +510,23 @@ class Settings {
 	 * @return mixed
 	 */
 	private static function sanitizeValue( $key, $value, $default ) {
+		/*
+		 * A setting whose value is an array is rendered as a JSON
+		 * textarea, so what arrives from the form is a JSON STRING. It
+		 * has to be decoded before the sanitizer can work with it -
+		 * otherwise the streak bonus map and the coin packages could
+		 * never be saved.
+		 */
+		if ( is_array( $default ) && is_string( $value ) ) {
+			$decoded = json_decode( $value, true );
+
+			if ( is_array( $decoded ) ) {
+				$value = $decoded;
+			} else {
+				return is_array( $default ) ? array() : $default;
+			}
+		}
+
 		if ( is_array( $default ) && 'packages' === substr( $key, 0, 8 ) ) {
 			return self::sanitizePackages( $value );
 		}
@@ -320,6 +565,16 @@ class Settings {
 	 * @return array Threshold => amount.
 	 */
 	public static function sanitizeBonuses( $value ) {
+		/*
+		 * The bonuses are edited in a JSON textarea, so what arrives from
+		 * the form is a JSON string. It is decoded here, so the map can
+		 * actually be saved.
+		 */
+		if ( is_string( $value ) ) {
+			$decoded = json_decode( $value, true );
+			$value   = is_array( $decoded ) ? $decoded : array();
+		}
+
 		if ( ! is_array( $value ) ) {
 			return array();
 		}
@@ -430,6 +685,7 @@ class Settings {
 				'title'         => isset( $package['title'] ) ? sanitize_text_field( $package['title'] ) : '',
 				'coins'         => $coins,
 				'bonus_percent' => isset( $package['bonus_percent'] ) ? max( 0, min( 100, (int) $package['bonus_percent'] ) ) : 0,
+				'max_bonus'     => isset( $package['max_bonus'] ) ? max( 0, (int) $package['max_bonus'] ) : 0,
 				'price'         => $price,
 				'currency'      => isset( $package['currency'] ) ? strtoupper( substr( sanitize_text_field( $package['currency'] ), 0, 8 ) ) : Settings::get( 'purchase.currency', 'USD' ),
 				'badge'         => isset( $package['badge'] ) ? sanitize_text_field( $package['badge'] ) : '',

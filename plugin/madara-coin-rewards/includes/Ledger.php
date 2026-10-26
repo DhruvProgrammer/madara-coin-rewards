@@ -84,6 +84,18 @@ class Ledger implements LedgerInterface {
 	}
 
 	/**
+	 * Clears any cached balance state.
+	 *
+	 * The ledger has no in-process balance cache, but the test harness calls
+	 * this between scenarios, so keep it as a no-op for compatibility.
+	 *
+	 * @return void
+	 */
+	public function reset_balance_cache() {
+		// No-op: balances are read straight from the database.
+	}
+
+	/**
 	 * Returns the clock in use.
 	 *
 	 * @return Clock
@@ -111,6 +123,10 @@ class Ledger implements LedgerInterface {
 	 * @return array|WP_Error ['transaction_id','balance_after','duplicate','amount'].
 	 */
 	public function credit( $user_id, $amount, $type, $reason = '', $ctx = array() ) {
+		if ( is_bool( $user_id ) || is_array( $user_id ) || is_object( $user_id ) || null === $user_id ) {
+			return new WP_Error( 'mcr_invalid_user', __( 'Invalid user.', 'madara-coin-rewards' ) );
+		}
+
 		$user_id = absint( $user_id );
 
 		if ( ! $user_id ) {
@@ -137,7 +153,12 @@ class Ledger implements LedgerInterface {
 		 * @param int    $user_id User id.
 		 * @param array  $ctx     Context.
 		 */
-		$amount = (int) apply_filters( 'mcr_credit_amount', $amount, $type, $user_id, $ctx );
+		$filtered = apply_filters( 'mcr_credit_amount', $amount, $type, $user_id, $ctx );
+		$amount   = BalanceMath::validateCredit( $filtered );
+
+		if ( false === $amount ) {
+			return new WP_Error( 'mcr_invalid_amount', __( 'Invalid coin amount.', 'madara-coin-rewards' ) );
+		}
 
 		/**
 		 * Filters whether a credit may proceed.
@@ -173,6 +194,10 @@ class Ledger implements LedgerInterface {
 	 * @return array|WP_Error ['transaction_id','balance_after','duplicate','amount'].
 	 */
 	public function debit( $user_id, $amount, $type, $reason = '', $ctx = array() ) {
+		if ( is_bool( $user_id ) || is_array( $user_id ) || is_object( $user_id ) || null === $user_id ) {
+			return new WP_Error( 'mcr_invalid_user', __( 'Invalid user.', 'madara-coin-rewards' ) );
+		}
+
 		$user_id = absint( $user_id );
 
 		if ( ! $user_id ) {
@@ -282,6 +307,24 @@ class Ledger implements LedgerInterface {
 		$txn_id = (int) $wpdb->insert_id;
 
 		if ( $is_credit ) {
+			if ( $signed <= 0 ) {
+				$this->rollback();
+				$this->delete_transaction_row( $txn_id );
+
+				return new WP_Error( 'mcr_invalid_amount', __( 'Invalid coin amount.', 'madara-coin-rewards' ) );
+			}
+
+			$current_balance = (int) $wpdb->get_var(
+				$wpdb->prepare( "SELECT balance FROM {$balances} WHERE user_id = %d", $user_id ) // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			);
+
+			if ( $current_balance + $signed > BalanceMath::MAX_BALANCE ) {
+				$this->rollback();
+				$this->delete_transaction_row( $txn_id );
+
+				return new WP_Error( 'mcr_invalid_amount', __( 'Invalid coin amount.', 'madara-coin-rewards' ) );
+			}
+
 			/*
 			 * Purchased coins are tracked separately from earned coins so
 			 * the dashboard can show what was bought rather than won.
@@ -315,7 +358,8 @@ class Ledger implements LedgerInterface {
 			 * A reversal undoes an earlier credit, so it must not count as
 			 * the user SPENDING coins, and it gives the earned total back.
 			 */
-			$is_reversal = ! empty( $ctx['reversal'] );
+			$is_reversal = ! empty( $ctx['reversal'] ) || 'refund' === $type || 'reversal' === $type;
+			$restore_purchased = ! empty( $ctx['restore_purchased'] ) || 'refund' === $type;
 
 			if ( $is_reversal ) {
 				$updated = $wpdb->query(
@@ -335,6 +379,32 @@ class Ledger implements LedgerInterface {
 						$amount_abs
 					)
 				);
+
+				if ( false !== $updated && 0 !== (int) $updated && $restore_purchased ) {
+					$current_purchased = (int) $wpdb->get_var(
+						$wpdb->prepare( "SELECT purchased_total FROM {$balances} WHERE user_id = %d", $user_id ) // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					);
+
+					if ( $current_purchased > 0 ) {
+						$to_restore = min( $amount_abs, $current_purchased );
+
+						if ( $to_restore > 0 ) {
+							$wpdb->query(
+								$wpdb->prepare(
+									"UPDATE {$balances}
+										SET purchased_total = purchased_total - %d,
+											updated_at      = %s
+									 WHERE user_id = %d
+									   AND purchased_total >= %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+									$to_restore,
+									$now,
+									$user_id,
+									$to_restore
+								)
+							);
+						}
+					}
+				}
 			} else {
 				// The balance guard lives in SQL. If the user cannot afford it,
 				// zero rows match and nothing is written.
@@ -358,6 +428,7 @@ class Ledger implements LedgerInterface {
 
 		if ( false === $updated ) {
 			$this->rollback();
+			$this->delete_transaction_row( $txn_id );
 
 			return new WP_Error( 'mcr_balance_update_failed', __( 'Could not update the balance.', 'madara-coin-rewards' ) );
 		}
@@ -366,6 +437,7 @@ class Ledger implements LedgerInterface {
 			// No row matched: either the user has no balance row yet, or the
 			// balance is insufficient. Both mean the debit cannot proceed.
 			$this->rollback();
+			$this->delete_transaction_row( $txn_id );
 
 			return new WP_Error( 'mcr_insufficient_funds', __( 'You do not have enough coins for this.', 'madara-coin-rewards' ) );
 		}
@@ -385,8 +457,13 @@ class Ledger implements LedgerInterface {
 		);
 
 		if ( ! $this->commit() ) {
+			$this->rollback();
+			$this->delete_transaction_row( $txn_id );
+
 			return new WP_Error( 'mcr_commit_failed', __( 'Could not commit the transaction.', 'madara-coin-rewards' ) );
 		}
+
+		delete_transient( 'mcr_dashboard_stats' );
 
 		/**
 		 * Fires after coins have been credited and committed.
@@ -433,7 +510,13 @@ class Ledger implements LedgerInterface {
 			)
 		);
 
-		return null === $balance ? 0 : (int) $balance;
+		if ( null === $balance ) {
+			return 0;
+		}
+
+		$balance = (int) $balance;
+
+		return $balance < 0 ? 0 : $balance;
 	}
 
 	/**
@@ -470,7 +553,15 @@ class Ledger implements LedgerInterface {
 			return $defaults;
 		}
 
-		return array_merge( $defaults, array_map( 'intval', $row ) );
+		$clean = array();
+
+		foreach ( $defaults as $key => $default ) {
+			$value = isset( $row[ $key ] ) && null !== $row[ $key ] ? (int) $row[ $key ] : 0;
+
+			$clean[ $key ] = $value < 0 ? 0 : $value;
+		}
+
+		return array_merge( $defaults, $clean );
 	}
 
 	/**
@@ -502,24 +593,35 @@ class Ledger implements LedgerInterface {
 	 * @param int $offset  Offset.
 	 * @return array
 	 */
-	public function list_for_user( $user_id, $limit = 20, $offset = 0 ) {
+	public function list_for_user( $user_id, $limit = 20, $offset = 0, $type = '' ) {
 		global $wpdb;
 
 		$user_id = absint( $user_id );
 		$limit   = max( 1, min( 100, absint( $limit ) ) );
 		$offset  = max( 0, absint( $offset ) );
 
-		return $wpdb->get_results(
-			$wpdb->prepare(
-				'SELECT id, txn_uid, type, amount, balance_after, reason, source, ref_type, ref_id, created_at
+		if ( is_array( $type ) ) {
+			$type = isset( $type['type'] ) ? (string) $type['type'] : '';
+		}
+
+		$type = sanitize_key( (string) $type );
+
+		$sql    = 'SELECT id, txn_uid, type, amount, balance_after, reason, source, ref_type, ref_id, created_at
 				 FROM ' . $wpdb->prefix . 'mcr_transactions
-				 WHERE user_id = %d
-				 ORDER BY id DESC
-				 LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$user_id,
-				$limit,
-				$offset
-			)
+				 WHERE user_id = %d';
+		$params = array( $user_id );
+
+		if ( '' !== $type ) {
+			$sql     .= ' AND type = %s';
+			$params[] = $type;
+		}
+
+		$sql     .= ' ORDER BY id DESC LIMIT %d OFFSET %d';
+		$params[] = $limit;
+		$params[] = $offset;
+
+		return $wpdb->get_results(
+			$wpdb->prepare( $sql, $params ) // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		);
 	}
 
@@ -529,14 +631,27 @@ class Ledger implements LedgerInterface {
 	 * @param int $user_id User id.
 	 * @return int
 	 */
-	public function count_for_user( $user_id ) {
+	public function count_for_user( $user_id, $type = '' ) {
 		global $wpdb;
 
+		$user_id = absint( $user_id );
+
+		if ( is_array( $type ) ) {
+			$type = isset( $type['type'] ) ? (string) $type['type'] : '';
+		}
+
+		$type = sanitize_key( (string) $type );
+
+		$sql    = 'SELECT COUNT(*) FROM ' . $wpdb->prefix . 'mcr_transactions WHERE user_id = %d';
+		$params = array( $user_id );
+
+		if ( '' !== $type ) {
+			$sql     .= ' AND type = %s';
+			$params[] = $type;
+		}
+
 		return (int) $wpdb->get_var(
-			$wpdb->prepare(
-				'SELECT COUNT(*) FROM ' . $wpdb->prefix . 'mcr_transactions WHERE user_id = %d', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				absint( $user_id )
-			)
+			$wpdb->prepare( $sql, $params ) // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		);
 	}
 
@@ -564,24 +679,81 @@ class Ledger implements LedgerInterface {
 			)
 		);
 
+		$earned = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COALESCE(SUM(CASE WHEN amount > 0 OR type IN ( 'reversal', 'refund' ) THEN amount ELSE 0 END), 0) FROM " . $wpdb->prefix . 'mcr_transactions WHERE user_id = %d', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$user_id
+			)
+		);
+
+		$spent = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COALESCE(SUM(CASE WHEN amount < 0 AND type NOT IN ( 'reversal', 'refund' ) THEN -amount ELSE 0 END), 0) FROM " . $wpdb->prefix . 'mcr_transactions WHERE user_id = %d', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$user_id
+			)
+		);
+
 		$previous = $this->get_balance( $user_id );
 		$fixed    = false;
 
-		if ( $previous !== $sum ) {
+		$now = $this->get_clock()->mysql_gmt();
+
+		$this->begin();
+
+		$existing = $wpdb->get_row(
+			$wpdb->prepare( 'SELECT user_id FROM ' . $wpdb->prefix . 'mcr_balances WHERE user_id = %d', $user_id ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			\ARRAY_A
+		);
+
+		if ( $existing ) {
 			$wpdb->query(
 				$wpdb->prepare(
-					'INSERT INTO ' . $wpdb->prefix . 'mcr_balances (user_id, balance, updated_at) VALUES (%d, %d, %s)
-					 ON DUPLICATE KEY UPDATE balance = %d, updated_at = %s', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$user_id,
+					'UPDATE ' . $wpdb->prefix . 'mcr_balances
+						SET balance = %d, lifetime_earned = %d, lifetime_spent = %d, updated_at = %s
+					 WHERE user_id = %d', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					$sum,
-					$this->get_clock()->mysql_gmt(),
-					$sum,
-					$this->get_clock()->mysql_gmt()
+					$earned,
+					$spent,
+					$now,
+					$user_id
 				)
 			);
+		} else {
+			$wpdb->query(
+				$wpdb->prepare(
+					'INSERT INTO ' . $wpdb->prefix . 'mcr_balances (user_id, balance, lifetime_earned, lifetime_spent, purchased_total, updated_at)
+					 VALUES (%d, %d, %d, %d, %d, %s)', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					$user_id,
+					$sum,
+					$earned,
+					$spent,
+					0,
+					$now
+				)
+			);
+		}
 
+		// Mark as fixed when anything diverged from the stored row.
+		$stored = $wpdb->get_row(
+			$wpdb->prepare(
+				'SELECT balance, lifetime_earned, lifetime_spent FROM ' . $wpdb->prefix . 'mcr_balances WHERE user_id = %d', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$user_id
+			),
+			\ARRAY_A
+		);
+
+		if ( ! $stored
+			|| (int) $stored['balance'] !== $sum
+			|| (int) $stored['lifetime_earned'] !== $earned
+			|| (int) $stored['lifetime_spent'] !== $spent ) {
 			$fixed = true;
 		}
+
+		if ( $previous !== $sum ) {
+			$fixed = true;
+		}
+
+		$this->commit();
 
 		return array(
 			'previous'   => $previous,
@@ -599,8 +771,14 @@ class Ledger implements LedgerInterface {
 	 * @return string
 	 */
 	private function idempotency_key( $ctx, $type, $user_id ) {
-		if ( ! empty( $ctx['idempotency_key'] ) ) {
-			return substr( sanitize_text_field( (string) $ctx['idempotency_key'] ), 0, 191 );
+		if ( isset( $ctx['idempotency_key'] ) && (string) $ctx['idempotency_key'] !== '' ) {
+			$key = sanitize_text_field( (string) $ctx['idempotency_key'] );
+
+			if ( strlen( $key ) > 191 ) {
+				$key = 'hash:' . hash( 'sha256', (string) $ctx['idempotency_key'] );
+			}
+
+			return substr( $key, 0, 191 );
 		}
 
 		$ref = '';
@@ -616,7 +794,13 @@ class Ledger implements LedgerInterface {
 			return 'auto:' . $user_id . ':' . $type . ':' . self::uuid4();
 		}
 
-		return substr( $user_id . ':' . $type . ':' . $ref, 0, 191 );
+		$key = $user_id . ':' . $type . ':' . $ref;
+
+		if ( strlen( $key ) > 191 ) {
+			$key = 'hash:' . hash( 'sha256', $key );
+		}
+
+		return substr( $key, 0, 191 );
 	}
 
 	/**
@@ -780,6 +964,32 @@ class Ledger implements LedgerInterface {
 		$this->in_transaction = false;
 
 		$wpdb->query( 'ROLLBACK' );
+	}
+
+	/**
+	 * Removes an inserted ledger row on a failed mutation.
+	 *
+	 * On a transactional engine the rollback already undoes the insert;
+	 * on a non-transactional engine this is the only way to keep a
+	 * rejected debit from leaving a phantom ledger row behind.
+	 *
+	 * @param int $txn_id Ledger row id.
+	 * @return void
+	 */
+	private function delete_transaction_row( $txn_id ) {
+		global $wpdb;
+
+		$txn_id = (int) $txn_id;
+
+		if ( ! $txn_id ) {
+			return;
+		}
+
+		$ledger = $wpdb->prefix . 'mcr_transactions';
+
+		$wpdb->query(
+			$wpdb->prepare( "DELETE FROM {$ledger} WHERE id = %d", $txn_id ) // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		);
 	}
 
 	/**

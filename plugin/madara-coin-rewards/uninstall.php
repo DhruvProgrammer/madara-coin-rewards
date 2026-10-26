@@ -29,8 +29,8 @@ if ( $mcr_purge ) {
 	delete_option( 'mcr_db_version' );
 	delete_option( 'mcr_data_version' );
 	delete_option( 'mcr_engine_warning' );
-	delete_option( 'mcr_activation_redirect' );
-	delete_option( 'mcr_dashboard_stats' );
+	delete_transient( 'mcr_activation_redirect' );
+	delete_transient( 'mcr_dashboard_stats' );
 	delete_option( 'mcr_slug_redirects' );
 
 	$mcr_roles = array( 'administrator' );

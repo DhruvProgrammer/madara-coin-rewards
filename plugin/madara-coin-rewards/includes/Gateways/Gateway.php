@@ -73,6 +73,18 @@ abstract class Gateway {
 	const UPDATABLE_COLUMNS = array( 'provider_tx_id', 'paid_at', 'expires_at' );
 
 	/**
+	 * The setting keys that hold a secret, per gateway.
+	 *
+	 * The values of these keys are encrypted at rest before they are
+	 * stored, and they are never rendered back into the settings form.
+	 *
+	 * @var array<string, string[]>
+	 */
+	const SECRET_FIELDS = array(
+		'stripe' => array( 'secret_key', 'webhook_secret' ),
+	);
+
+	/**
 	 * Per-gateway settings, as stored under `gateways.{id}` in Settings.
 	 *
 	 * @var array
@@ -228,7 +240,28 @@ abstract class Gateway {
 	 * @return bool
 	 */
 	public static function save_settings( $gateway_id, array $values ) {
-		$clean = array();
+		$gateway_id = sanitize_key( (string) $gateway_id );
+		$existing   = Settings::get( 'gateways.' . $gateway_id, array() );
+		$existing   = is_array( $existing ) ? $existing : array();
+
+		return Settings::update( array( 'gateways.' . $gateway_id => self::sanitize_settings( $gateway_id, $values, $existing ) ) );
+	}
+
+	/**
+	 * Sanitizes a gateway's settings and encrypts its secret fields.
+	 *
+	 * An empty secret field means "keep the secret that is already
+	 * stored", so the settings form never blanks a credential by accident.
+	 *
+	 * @param string $gateway_id Gateway slug.
+	 * @param array  $values     Raw submitted values.
+	 * @param array  $existing   The values that are already stored.
+	 * @return array
+	 */
+	public static function sanitize_settings( $gateway_id, array $values, array $existing = array() ) {
+		$gateway_id = sanitize_key( (string) $gateway_id );
+		$secrets    = isset( self::SECRET_FIELDS[ $gateway_id ] ) ? self::SECRET_FIELDS[ $gateway_id ] : array();
+		$clean      = $existing;
 
 		foreach ( $values as $key => $value ) {
 			$key = sanitize_key( (string) $key );
@@ -237,10 +270,26 @@ abstract class Gateway {
 				continue;
 			}
 
-			$clean[ $key ] = self::sanitize_setting_value( $value );
+			if ( is_array( $value ) ) {
+				$clean[ $key ] = self::sanitize_setting_value( $value );
+				continue;
+			}
+
+			$value = sanitize_text_field( (string) $value );
+
+			if ( in_array( $key, $secrets, true ) ) {
+				if ( '' === $value ) {
+					// Keep whatever is already stored.
+					continue;
+				}
+
+				$value = \MCR\Support\Secrets::encrypt( $value );
+			}
+
+			$clean[ $key ] = $value;
 		}
 
-		return Settings::update( array( 'gateways.' . sanitize_key( (string) $gateway_id ) => $clean ) );
+		return $clean;
 	}
 
 	/**
@@ -580,7 +629,13 @@ abstract class Gateway {
 				$ip,
 				$ua,
 				$now,
-				'0000-00-00 00:00:00',
+				/*
+				 * The column is NOT NULL, so the epoch the schema
+				 * declares is used. The zero date is rejected by MySQL
+				 * in strict mode, which made every purchase order
+				 * fail to insert.
+				 */
+				'1970-01-01 00:00:00',
 				$expires
 			)
 		);
@@ -770,6 +825,15 @@ abstract class Gateway {
 			return new WP_Error( 'mcr_invalid_coins', __( 'The coin amount of this payment is invalid.', 'madara-coin-rewards' ) );
 		}
 
+		if ( 'on' !== Settings::get( 'purchase.auto_credit', 'on' ) ) {
+			return array(
+				'credited'       => false,
+				'duplicate'      => false,
+				'transaction_id' => 0,
+				'balance_after'  => 0,
+			);
+		}
+
 		$tx = sanitize_text_field( (string) ( $order['provider_tx_id'] ?? '' ) );
 
 		/*
@@ -887,6 +951,13 @@ abstract class Gateway {
 						'source'          => 'refund',
 						'ref_type'        => 'payment',
 						'ref_id'          => $payment_id,
+						/*
+						 * A refund takes the coins back. It is NOT a
+						 * spend, so it must not count towards
+						 * lifetime_spent, and it must restore the
+						 * lifetime_earned the purchase had added.
+						 */
+						'reversal'        => true,
 					)
 				);
 			} catch ( \Throwable $e ) {

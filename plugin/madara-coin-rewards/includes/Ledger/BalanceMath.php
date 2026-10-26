@@ -116,7 +116,7 @@ class BalanceMath {
 			return false;
 		}
 
-		return $new;
+		return max( 0, $new );
 	}
 
 	/**

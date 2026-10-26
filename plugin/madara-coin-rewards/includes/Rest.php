@@ -66,6 +66,7 @@ class Rest {
 				'methods'             => 'GET',
 				'callback'            => array( $this, 'get_balance' ),
 				'permission_callback' => array( $this, 'permission_logged_in' ),
+				'args'                => array(),
 			)
 		);
 
@@ -76,6 +77,7 @@ class Rest {
 				'methods'             => 'POST',
 				'callback'            => array( $this, 'post_checkin' ),
 				'permission_callback' => array( $this, 'permission_logged_in' ),
+				'args'                => array(),
 			)
 		);
 
@@ -86,6 +88,13 @@ class Rest {
 				'methods'             => 'POST',
 				'callback'            => array( $this, 'post_ad_start' ),
 				'permission_callback' => array( $this, 'permission_logged_in' ),
+				'args'                => array(
+					'ad_id' => array(
+						'required'          => false,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_key',
+					),
+				),
 			)
 		);
 
@@ -96,6 +105,18 @@ class Rest {
 				'methods'             => 'POST',
 				'callback'            => array( $this, 'post_ad_verify' ),
 				'permission_callback' => array( $this, 'permission_logged_in' ),
+				'args'                => array(
+					'session_token'    => array(
+						'required'          => true,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'completion_token' => array(
+						'required'          => false,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+				),
 			)
 		);
 
@@ -106,6 +127,7 @@ class Rest {
 				'methods'             => 'GET',
 				'callback'            => array( $this, 'get_packages' ),
 				'permission_callback' => '__return_true',
+				'args'                => array(),
 			)
 		);
 
@@ -116,6 +138,13 @@ class Rest {
 				'methods'             => 'POST',
 				'callback'            => array( $this, 'post_order' ),
 				'permission_callback' => array( $this, 'permission_logged_in' ),
+				'args'                => array(
+					'package_id' => array(
+						'required'          => true,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_key',
+					),
+				),
 			)
 		);
 
@@ -126,6 +155,13 @@ class Rest {
 				'methods'             => 'GET',
 				'callback'            => array( $this, 'get_order' ),
 				'permission_callback' => array( $this, 'permission_logged_in' ),
+				'args'                => array(
+					'order_id' => array(
+						'required'          => true,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_key',
+					),
+				),
 			)
 		);
 
@@ -136,6 +172,20 @@ class Rest {
 				'methods'             => 'GET',
 				'callback'            => array( $this, 'get_transactions' ),
 				'permission_callback' => array( $this, 'permission_logged_in' ),
+				'args'                => array(
+					'page'     => array(
+						'required'          => false,
+						'type'              => 'integer',
+						'default'           => 1,
+						'sanitize_callback' => 'absint',
+					),
+					'per_page' => array(
+						'required'          => false,
+						'type'              => 'integer',
+						'default'           => 20,
+						'sanitize_callback' => 'absint',
+					),
+				),
 			)
 		);
 
@@ -146,6 +196,7 @@ class Rest {
 				'methods'             => 'GET',
 				'callback'            => array( $this, 'get_dashboard' ),
 				'permission_callback' => array( $this, 'permission_logged_in' ),
+				'args'                => array(),
 			)
 		);
 
@@ -181,11 +232,12 @@ class Rest {
 	 */
 	public function get_balance() {
 		$user_id = get_current_user_id();
+		$stats   = Ledger::instance()->get_stats( $user_id );
 
 		return rest_ensure_response(
 			array(
-				'balance'         => Ledger::instance()->get_balance( $user_id ),
-				'stats'           => Ledger::instance()->get_stats( $user_id ),
+				'balance'         => (int) ( $stats['balance'] ?? 0 ),
+				'stats'           => $stats,
 				'checkin'         => CheckIn::instance()->status( $user_id ),
 				'ads'             => AdSessions::instance()->stats( $user_id ),
 				'ads_configured'  => AdSessions::instance()->isConfigured(),

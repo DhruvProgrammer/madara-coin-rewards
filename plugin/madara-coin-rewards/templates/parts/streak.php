@@ -51,6 +51,8 @@ if ( empty( $mcr_items ) ) {
 			$mcr_classes .= ' is-done';
 		} elseif ( $mcr_future ) {
 			$mcr_classes .= ' is-locked';
+		} elseif ( $mcr_today ) {
+			$mcr_classes .= ' is-available';
 		} else {
 			$mcr_classes .= ' is-missed';
 		}
@@ -66,7 +68,7 @@ if ( empty( $mcr_items ) ) {
 		$mcr_date_label = '' !== $mcr_date ? \MCR\Templates\Templates::format_date( $mcr_date ) : '';
 		$mcr_weekday    = isset( $mcr_day['label'] ) && '' !== (string) $mcr_day['label']
 			? (string) $mcr_day['label']
-			: ( '' !== $mcr_date ? gmdate( 'D', (int) strtotime( $mcr_date . ' 00:00:00' ) ) : '' );
+			: ( '' !== $mcr_date ? \MCR\Templates\Templates::format_date( $mcr_date, 'D' ) : '' );
 
 		if ( $mcr_claimed ) {
 			$mcr_sr = sprintf(
@@ -74,6 +76,12 @@ if ( empty( $mcr_items ) ) {
 				__( '%1$s: claimed, %2$s coins.', 'madara-coin-rewards' ),
 				$mcr_date_label,
 				number_format_i18n( $mcr_amount )
+			);
+		} elseif ( $mcr_today ) {
+			$mcr_sr = sprintf(
+				/* translators: %s: date */
+				__( '%s: available, ready to claim.', 'madara-coin-rewards' ),
+				$mcr_date_label
 			);
 		} elseif ( $mcr_future ) {
 			$mcr_sr = sprintf(
@@ -89,9 +97,9 @@ if ( empty( $mcr_items ) ) {
 			);
 		}
 		?>
-		<li class="<?php echo esc_attr( $mcr_classes ); ?>"<?php echo esc_attr( $mcr_today ? ' aria-current="date"' : '' ); ?>>
+		<li class="<?php echo esc_attr( $mcr_classes ); ?>"<?php echo $mcr_is_today ? ' aria-current="date"' : ''; // phpcs:ignore WordPress.Security.EscapeOutput ?>>
 			<span class="mcr-streak__label" aria-hidden="true"><?php echo esc_html( $mcr_weekday ); ?></span>
-			<span class="mcr-streak__dot" aria-hidden="true"><?php echo esc_html( $mcr_claimed ? '&#10003;' : '&#183;' ); ?></span>
+			<span class="mcr-streak__dot" aria-hidden="true"><?php echo esc_html( $mcr_claimed ? '✓' : '·' ); ?></span>
 			<span class="mcr-sr-only"><?php echo esc_html( $mcr_sr ); ?></span>
 		</li>
 	<?php endforeach; ?>

@@ -98,6 +98,12 @@ class Assets {
 		$this->registered = true;
 
 		add_action( 'wp_enqueue_scripts', array( $this, 'maybe_enqueue' ), 20 );
+
+		/*
+		 * The admin screens have their own stylesheet. It was never
+		 * enqueued, so the plugin's admin pages were unstyled.
+		 */
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ), 20 );
 	}
 
 	/**
@@ -141,7 +147,31 @@ class Assets {
 			$this->layout = '' !== $layout ? sanitize_key( $layout ) : Templates::layout( $slug );
 		}
 
-		$this->enqueue();
+		$this->enqueue_scripts();
+	}
+
+	/**
+	 * Enqueues the stylesheet the admin screens need.
+	 *
+	 * @return void
+	 */
+	public function enqueue_admin_assets() {
+		if ( ! defined( 'MCR_PLUGIN_URL' ) || ! defined( 'MCR_VERSION' ) ) {
+			return;
+		}
+
+		if ( ! current_user_can( 'mcr_manage_settings' ) && ! current_user_can( 'mcr_manage_coins' ) ) {
+			return;
+		}
+
+		if ( ! wp_style_is( 'mcr-admin', 'enqueued' ) && ! wp_style_is( 'mcr-admin', 'done' ) ) {
+			wp_enqueue_style(
+				'mcr-admin',
+				MCR_PLUGIN_URL . 'assets/css/mcr-admin.css',
+				array(),
+				MCR_VERSION
+			);
+		}
 	}
 
 	/**
@@ -176,6 +206,28 @@ class Assets {
 				array( self::STYLE ),
 				MCR_VERSION
 			);
+		}
+
+		if ( ! wp_style_is( 'mcr-rewards', 'enqueued' ) && ! wp_style_is( 'mcr-rewards', 'done' ) ) {
+			wp_enqueue_style(
+				'mcr-rewards',
+				MCR_PLUGIN_URL . 'assets/css/mcr-rewards.css',
+				array( self::STYLE ),
+				MCR_VERSION
+			);
+		}
+
+		$this->enqueue_scripts();
+	}
+
+	/**
+	 * Enqueues the frontend script and localizes data.
+	 *
+	 * @return void
+	 */
+	public function enqueue_scripts() {
+		if ( ! defined( 'MCR_PLUGIN_URL' ) || ! defined( 'MCR_VERSION' ) ) {
+			return;
 		}
 
 		if ( ! wp_script_is( self::SCRIPT, 'enqueued' ) && ! wp_script_is( self::SCRIPT, 'done' ) ) {
@@ -275,8 +327,18 @@ class Assets {
 			return false;
 		}
 
+		/*
+		 * The balance widget can sit in the sidebar of ANY page, so it is
+		 * checked first. It used to be checked only on non-singular
+		 * requests, which left the widget unstyled on every chapter and
+		 * every post.
+		 */
+		if ( $this->has_balance_widget() ) {
+			return true;
+		}
+
 		if ( ! is_singular() ) {
-			return $this->has_balance_widget();
+			return false;
 		}
 
 		$post = get_post();

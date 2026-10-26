@@ -46,15 +46,23 @@ class PackageCalculator {
 			$bonus_percent = 100;
 		}
 
-		$bonus = (int) floor( $base_coins * $bonus_percent / 100 );
+		$bonus_raw = floor( ( (float) $base_coins ) * ( $bonus_percent / 100.0 ) );
 
 		$max_bonus_coins = (int) $max_bonus_coins;
 
-		if ( $max_bonus_coins > 0 && $bonus > $max_bonus_coins ) {
-			$bonus = $max_bonus_coins;
+		if ( $max_bonus_coins > 0 && $bonus_raw > $max_bonus_coins ) {
+			$bonus_raw = (float) $max_bonus_coins;
 		}
 
-		return $base_coins + $bonus;
+		$total_float = ( (float) $base_coins ) + $bonus_raw;
+
+		if ( $total_float >= (float) PHP_INT_MAX ) {
+			return PHP_INT_MAX;
+		}
+
+		$total = (int) $total_float;
+
+		return $total >= 0 ? $total : 0;
 	}
 
 	/**
@@ -74,9 +82,22 @@ class PackageCalculator {
 			return 0;
 		}
 
-		$factor = pow( 10, $decimals );
+		$price_float = (float) $price;
 
-		return (int) round( ( (float) $price ) * $factor );
+		if ( ! is_finite( $price_float ) || $price_float <= 0 ) {
+			return 0;
+		}
+
+		$factor = pow( 10, $decimals );
+		$val    = round( $price_float * $factor );
+
+		if ( $val >= (float) PHP_INT_MAX ) {
+			return PHP_INT_MAX;
+		}
+
+		$minor = (int) $val;
+
+		return $minor >= 0 ? $minor : 0;
 	}
 
 	/**
@@ -89,7 +110,12 @@ class PackageCalculator {
 	public static function fromMinorUnits( $minor, $decimals = 2 ) {
 		$decimals = max( 0, min( 6, (int) $decimals ) );
 		$factor   = pow( 10, $decimals );
+		$minor    = (int) $minor;
 
-		return round( ( (int) $minor ) / $factor, $decimals );
+		if ( $minor < 0 ) {
+			$minor = 0;
+		}
+
+		return round( $minor / $factor, $decimals );
 	}
 }

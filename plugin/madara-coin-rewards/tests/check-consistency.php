@@ -75,7 +75,7 @@ foreach ( $php_files as $path ) {
 		continue;
 	}
 
-	$rel     = str_replace( $root . DIRECTORY_SEPARATOR, '', $path );
+	$rel     = str_replace( '\\', '/', str_replace( $root . DIRECTORY_SEPARATOR, '', $path ) );
 	$tokens  = token_get_all( $source );
 	$count   = count( $tokens );
 
@@ -300,7 +300,7 @@ foreach ( $php_files as $path ) {
 		continue;
 	}
 
-	$rel = str_replace( $root . DIRECTORY_SEPARATOR, '', $path );
+	$rel = str_replace( '\\', '/', str_replace( $root . DIRECTORY_SEPARATOR, '', $path ) );
 
 	// Namespace + import aliases for this file.
 	$namespace = '';
@@ -334,7 +334,7 @@ foreach ( $php_files as $path ) {
 			continue;
 		}
 
-		if ( T_COMMENT === $token[0] || T_DOC_COMMENT === $token[0] ) {
+		if ( T_COMMENT === $token[0] || T_DOC_COMMENT === $token[0] || T_CONSTANT_ENCAPSED_STRING === $token[0] ) {
 			$code .= str_repeat( ' ', strlen( $token[1] ) );
 			continue;
 		}
@@ -490,7 +490,7 @@ foreach ( $php_files as $path ) {
 		continue;
 	}
 
-	$rel = str_replace( $root . DIRECTORY_SEPARATOR, '', $path );
+	$rel = str_replace( '\\', '/', str_replace( $root . DIRECTORY_SEPARATOR, '', $path ) );
 
 	if ( preg_match_all( '/mcr_(balances|transactions|checkins|ad_sessions|payments|claims|ledger|orders|user_coins|user_balances|ad_stats)\b/', $source, $m ) ) {
 		foreach ( $m[1] as $table ) {
@@ -516,7 +516,7 @@ foreach ( $php_files as $path ) {
 		continue;
 	}
 
-	$rel = str_replace( $root . DIRECTORY_SEPARATOR, '', $path );
+	$rel = str_replace( '\\', '/', str_replace( $root . DIRECTORY_SEPARATOR, '', $path ) );
 
 	// array( $this, 'method' ) style callbacks.
 	if ( preg_match_all( '/array\(\s*\$this,\s*[\'"]([a-zA-Z_][a-zA-Z0-9_]*)[\'"]\s*\)/', $source, $m, PREG_OFFSET_CAPTURE ) ) {

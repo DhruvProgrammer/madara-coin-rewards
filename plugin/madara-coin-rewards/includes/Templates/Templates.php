@@ -75,6 +75,23 @@ class Templates {
 	private static $render_count = 0;
 
 	/**
+	 * How many times each page slug has been rendered in this request.
+	 *
+	 * @var array<string, int>
+	 */
+	private static $render_counts = array();
+
+	/**
+	 * Resets render counts (used between requests and in test suites).
+	 *
+	 * @return void
+	 */
+	public static function reset_render_count() {
+		self::$render_count  = 0;
+		self::$render_counts = array();
+	}
+
+	/**
 	 * Registers a page definition, merging with the built-in one.
 	 *
 	 * @param string $slug       Page slug.
@@ -603,10 +620,14 @@ class Templates {
 		$symbols = array( '1', '5', '10', '50', '100' );
 		$symbol  = in_array( (string) $symbol, $symbols, true ) ? (string) $symbol : '10';
 
-		return '<span class="mcr-coin ' . esc_attr( $class ) . '" style="--mcr-coin-size:' . esc_attr( $size ) . 'px" aria-hidden="true" focusable="false">'
-			. '<svg class="mcr-coin__svg" viewBox="0 0 32 32" focusable="false" aria-hidden="true">'
-			. '<use href="#mcr-coin-symbol-' . esc_attr( $symbol ) . '"></use>'
-			. '</svg></span>';
+		return self::part(
+			'coin-icon',
+			array(
+				'size'   => $size,
+				'class'  => $class,
+				'symbol' => $symbol,
+			)
+		);
 	}
 
 	public static function amount( $value, $size = '', array $attrs = array() ) {
@@ -626,19 +647,15 @@ class Templates {
 			$extra .= ' ' . $attr . '="' . esc_attr( $attr_value ) . '"';
 		}
 
-		$coin = self::part(
-			'coin',
+		return self::part(
+			'amount',
 			array(
-				'value' => $value,
-				'size'  => in_array( $size, array( 'sm', 'lg', 'xl' ), true ) ? $size : '',
+				'value'  => $value,
+				'size'   => $size,
+				'suffix' => $suffix,
+				'extra'  => $extra,
 			)
 		);
-
-		return '<span class="mcr-amount' . esc_attr( $suffix ) . '" data-mcr-amount="' . esc_attr( $value ) . '"' . $extra . '>' // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			. $coin // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			. '<span class="mcr-amount__value">' . esc_html( number_format_i18n( $value ) ) . '</span>'
-			. '<span class="mcr-sr-only">' . esc_html__( 'coins', 'madara-coin-rewards' ) . '</span>'
-			. '</span>';
 	}
 
 	/**
@@ -936,6 +953,12 @@ class Templates {
 		$html .= $header;
 		$html .= '<div class="mcr-page__body">' . $content . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 
+		if ( ! isset( self::$render_counts[ $slug ] ) ) {
+			self::$render_counts[ $slug ] = 0;
+		}
+		++self::$render_counts[ $slug ];
+		$slug_count = self::$render_counts[ $slug ];
+
 		/*
 		 * The live region is announced by id, so a page that renders the
 		 * plugin twice must not emit the same id twice. The first render
@@ -944,11 +967,51 @@ class Templates {
 		 */
 		++self::$render_count;
 
+		/*
+		 * A page can render the plugin more than once - a shortcode and
+		 * the sidebar widget, for example. Two copies of the same id are
+		 * invalid HTML, and aria-labelledby then points at the wrong
+		 * heading, so every id after the first render is suffixed
+		 * together with the references to it.
+		 */
+		if ( $slug_count > 1 ) {
+			$html = self::suffix_ids( $html, '-' . $slug_count );
+		}
+
 		$live_id = 1 === self::$render_count ? 'mcr-live-balance' : 'mcr-live-balance-' . self::$render_count;
 
 		$html .= '<div class="mcr-sr-only" data-mcr-live="balance" id="' . esc_attr( $live_id ) . '" aria-live="polite" aria-atomic="true"></div>';
 		$html .= '<div class="mcr-portal mcr-toasts" role="region" aria-label="' . esc_attr__( 'Notifications', 'madara-coin-rewards' ) . '"></div>';
 		$html .= '</div>';
+
+		return $html;
+	}
+
+	/**
+	 * Makes the element ids in a rendered block unique.
+	 *
+	 * Every id the markup declares, and every reference to it, gets the
+	 * same suffix.
+	 *
+	 * @param string $html   The rendered markup.
+	 * @param string $suffix The suffix to add.
+	 * @return string
+	 */
+	private static function suffix_ids( $html, $suffix ) {
+		if ( ! preg_match_all( '/ id="(mcr-[^"]*)"/', $html, $matches ) ) {
+			return $html;
+		}
+
+		foreach ( array_unique( $matches[1] ) as $id ) {
+			$new = $id . $suffix;
+
+			$html = str_replace( 'id="' . $id . '"', 'id="' . $new . '"', $html );
+			$html = str_replace( 'for="' . $id . '"', 'for="' . $new . '"', $html );
+			$html = str_replace( 'aria-labelledby="' . $id . '"', 'aria-labelledby="' . $new . '"', $html );
+			$html = str_replace( 'aria-controls="' . $id . '"', 'aria-controls="' . $new . '"', $html );
+			$html = str_replace( 'aria-describedby="' . $id . '"', 'aria-describedby="' . $new . '"', $html );
+			$html = str_replace( 'href="#' . $id . '"', 'href="#' . $new . '"', $html );
+		}
 
 		return $html;
 	}

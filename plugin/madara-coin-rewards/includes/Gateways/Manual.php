@@ -249,7 +249,7 @@ class Manual extends Gateway {
 			$reason_format = __( 'Approved by %s via the manual gateway', 'madara-coin-rewards' );
 			$admin_name    = '';
 
-			$current_user = wp_get_current_user();
+			$current_user = function_exists( 'wp_get_current_user' ) ? wp_get_current_user() : null;
 
 			if ( $current_user instanceof \WP_User && '' !== (string) $current_user->display_name ) {
 				$admin_name = (string) $current_user->display_name;

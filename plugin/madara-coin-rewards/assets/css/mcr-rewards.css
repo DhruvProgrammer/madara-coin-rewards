@@ -350,8 +350,8 @@
 	min-height: 44px;
 }
 
-.mcr-scope.mcr-scope.mcr-scope .mcr-btn--gold:hover,
-.mcr-scope.mcr-scope.mcr-scope .mcr-btn--gold:focus {
+.mcr-scope.mcr-scope.mcr-scope.mcr-scope .mcr-btn--gold:hover,
+.mcr-scope.mcr-scope.mcr-scope.mcr-scope .mcr-btn--gold:focus {
 	background: linear-gradient(135deg, var(--mcr-coin-200), var(--mcr-coin-300));
 	color: var(--mcr-coin-ink);
 }
@@ -431,6 +431,12 @@
 .mcr-scope .mcr-legend__dot.is-locked {
 	border-color: var(--mcr-border-light);
 	background: var(--mcr-bg-muted);
+}
+
+.mcr-scope .mcr-legend__dot.is-missed {
+	border-color: var(--mcr-border-light);
+	background: var(--mcr-bg-surface);
+	box-shadow: inset 0 0 0 1px var(--mcr-border-light);
 }
 
 .mcr-scope .mcr-legend__dot.is-missed {

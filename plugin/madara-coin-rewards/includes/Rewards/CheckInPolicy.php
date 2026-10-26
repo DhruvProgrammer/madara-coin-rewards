@@ -131,6 +131,8 @@ class CheckInPolicy {
 			array(
 				'reason'       => __( 'Daily check-in reward', 'madara-coin-rewards' ),
 				'bonus_reason' => __( 'Check-in streak bonus', 'madara-coin-rewards' ),
+				'ref_id'       => 0,
+				'attempt'      => '',
 			)
 		);
 
@@ -140,6 +142,10 @@ class CheckInPolicy {
 		$bonus   = (int) ( $evaluation['bonus'] ?? 0 );
 		$txn_id  = 0;
 
+		$attempt_raw    = '' !== (string) $options['attempt'] ? $options['attempt'] : ( ! empty( $options['ref_id'] ) ? $options['ref_id'] : '' );
+		$attempt_suffix = '' !== (string) $attempt_raw ? ':' . sanitize_key( (string) $attempt_raw ) : '';
+		$ref_id_num     = absint( $attempt_raw );
+
 		if ( $base > 0 ) {
 			$result = $this->ledger->credit(
 				$user_id,
@@ -147,14 +153,19 @@ class CheckInPolicy {
 				'checkin',
 				$options['reason'],
 				array(
-					'idempotency_key' => 'checkin:' . $user_id . ':' . $today,
+					'idempotency_key' => 'checkin:' . $user_id . ':' . $today . $attempt_suffix,
 					'source'          => 'checkin',
 					'ref_type'        => 'checkin',
-					'ref_id'          => 0,
+					'ref_id'          => $ref_id_num,
 				)
 			);
 
 			if ( is_wp_error( $result ) ) {
+				$data = $result->get_error_data();
+				$data = is_array( $data ) ? $data : array();
+				$data['reversed'] = true;
+				$data['granted']  = 0;
+				$result->add_data( $data );
 				return $result;
 			}
 
@@ -176,10 +187,10 @@ class CheckInPolicy {
 				'checkin_bonus',
 				$options['bonus_reason'],
 				array(
-					'idempotency_key' => 'checkin_bonus:' . $user_id . ':' . $today,
+					'idempotency_key' => 'checkin_bonus:' . $user_id . ':' . $today . $attempt_suffix,
 					'source'          => 'checkin',
 					'ref_type'        => 'checkin',
-					'ref_id'          => 0,
+					'ref_id'          => $ref_id_num,
 				)
 			);
 
@@ -203,10 +214,10 @@ class CheckInPolicy {
 						'reversal',
 						__( 'Reversed daily check-in reward', 'madara-coin-rewards' ),
 						array(
-							'idempotency_key' => 'checkin_reversal:' . $user_id . ':' . $today,
+							'idempotency_key' => 'checkin_reversal:' . $user_id . ':' . $today . $attempt_suffix,
 							'source'          => 'checkin',
 							'ref_type'        => 'checkin',
-							'ref_id'          => 0,
+							'ref_id'          => $ref_id_num,
 							// Undoes the credit rather than counting as a spend.
 							'reversal'        => true,
 						)
@@ -222,6 +233,7 @@ class CheckInPolicy {
 				}
 
 				$data['reversed'] = $reversed;
+				$data['granted']  = $reversed ? 0 : $base;
 				$data['status']   = isset( $data['status'] ) ? (int) $data['status'] : 500;
 
 				if ( ! $reversed ) {

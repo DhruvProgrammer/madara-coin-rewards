@@ -140,14 +140,41 @@ class Orders {
 	 * @return string
 	 */
 	private function attempt_id( $user_id, array $package ) {
-		$key = 'mcr_purchase_attempt_' . $user_id . '_' . $package['id'];
+		$clock    = Container::instance()->clock();
+		$now      = $clock->now()->getTimestamp();
+		$meta_key = '_mcr_attempt_' . $package['id'];
 
-		$token = get_transient( $key );
+		if ( function_exists( 'get_user_meta' ) ) {
+			$meta = get_user_meta( $user_id, $meta_key, true );
 
-		if ( ! is_string( $token ) || '' === $token ) {
+			if ( is_array( $meta ) && isset( $meta['token'], $meta['expires'] ) && $now < (int) $meta['expires'] ) {
+				return (string) $meta['token'];
+			}
+
 			$token = wp_generate_uuid4();
-			set_transient( $key, $token, 120 );
+			update_user_meta(
+				$user_id,
+				$meta_key,
+				array(
+					'token'   => $token,
+					'expires' => $now + 120,
+				)
+			);
+
+			return $token;
 		}
+
+		static $tokens = array();
+		$key = $user_id . ':' . $package['id'];
+		if ( isset( $tokens[ $key ] ) && $now < $tokens[ $key ]['expires'] ) {
+			return $tokens[ $key ]['token'];
+		}
+
+		$token = wp_generate_uuid4();
+		$tokens[ $key ] = array(
+			'token'   => $token,
+			'expires' => $now + 120,
+		);
 
 		return $token;
 	}

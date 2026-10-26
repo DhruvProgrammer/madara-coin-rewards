@@ -1306,6 +1306,8 @@
 		if ( status ) {
 			status.textContent = text;
 		}
+
+		return status;
 	}
 
 	function loadMoreTransactions( button ) {
@@ -1314,7 +1316,7 @@
 		}
 
 		var page = parseInt( button.getAttribute( 'data-mcr-next-page' ), 10 );
-		var tbody = document.getElementById( 'mcr-txn-rows' );
+		var tbody = document.getElementById( 'mcr-txn-rows' ) || document.querySelector( '[data-mcr-txn-rows]' );
 
 		if ( isNaN( page ) || page < 1 || ! tbody ) {
 			return;

@@ -142,6 +142,23 @@ class WP_Widget {
 }
 
 /**
+ * The WP_List_Table base class.
+ */
+class WP_List_Table {
+	public $items = array();
+	public $_pagination_args = array();
+
+	public function __construct( $args = array() ) {}
+	public function display() {}
+	public function prepare_items() {}
+	public function get_columns() { return array(); }
+	public function get_sortable_columns() { return array(); }
+	public function get_pagenum() { return 1; }
+	public function set_pagination_args( $args ) { $this->_pagination_args = $args; }
+	public function get_total_items() { return count( $this->items ); }
+}
+
+/**
  * Plugin directory helper.
  *
  * @param string $file File.
@@ -207,6 +224,23 @@ function load_plugin_textdomain( $domain, $abs = false, $path = '' ) {
 	return true;
 }
 
+if ( ! function_exists( 'wp_date' ) ) {
+	/**
+	 * Formats a date/time using WordPress timezone.
+	 *
+	 * @param string        $format    Format.
+	 * @param int|null      $timestamp Timestamp.
+	 * @param DateTimeZone|null $timezone Timezone.
+	 * @return string
+	 */
+	function wp_date( $format, $timestamp = null, $timezone = null ) {
+		if ( null === $timestamp ) {
+			$timestamp = time();
+		}
+		return date( $format, $timestamp );
+	}
+}
+
 /**
  * Site timezone string.
  *
@@ -262,6 +296,9 @@ function rest_url( $path = '' ) {
  * @param string $action Action.
  * @return string
  */
+function wp_create_nonce( $action = -1 ) {
+	return substr( hash_hmac( 'md5', (string) $action, 'nonce_secret' ), -12, 10 );
+}
 
 /**
  * Nonce verification.
@@ -270,6 +307,9 @@ function rest_url( $path = '' ) {
  * @param string $action Action.
  * @return bool
  */
+function wp_verify_nonce( $nonce, $action = -1 ) {
+	return ! empty( $nonce ) && hash_equals( (string) wp_create_nonce( $action ), (string) $nonce );
+}
 
 /**
  * Cron scheduling.
@@ -375,7 +415,7 @@ function is_feed() {
  * @return bool
  */
 function is_admin() {
-	return false;
+	return ! empty( $GLOBALS['mcr_is_admin'] );
 }
 
 /**
@@ -430,20 +470,74 @@ function get_post_meta( $id, $key = '', $single = false ) {
 	return $single ? '' : array();
 }
 
-/**
- * Option delete.
- *
- * @param string $name Option name.
- * @return bool
- */
+if ( ! function_exists( 'get_user_meta' ) ) {
+	/**
+	 * User meta getter stub.
+	 *
+	 * @param int    $user_id User ID.
+	 * @param string $key     Meta key.
+	 * @param bool   $single  Whether to return a single value.
+	 * @return mixed
+	 */
+	function get_user_meta( $user_id, $key = '', $single = false ) {
+		if ( '' === $key ) {
+			return $GLOBALS['mcr_user_meta'][ $user_id ] ?? array();
+		}
+		$val = $GLOBALS['mcr_user_meta'][ $user_id ][ $key ] ?? ( $single ? '' : array() );
+		return $single ? $val : ( is_array( $val ) ? $val : array( $val ) );
+	}
+}
 
-/**
- * Option add.
- *
- * @param string $name  Option name.
- * @param mixed  $value Value.
- * @return bool
- */
+if ( ! function_exists( 'update_user_meta' ) ) {
+	/**
+	 * User meta updater stub.
+	 *
+	 * @param int    $user_id User ID.
+	 * @param string $key     Meta key.
+	 * @param mixed  $value   Meta value.
+	 * @return bool
+	 */
+	function update_user_meta( $user_id, $key, $value ) {
+		if ( ! isset( $GLOBALS['mcr_user_meta'] ) ) {
+			$GLOBALS['mcr_user_meta'] = array();
+		}
+		if ( ! isset( $GLOBALS['mcr_user_meta'][ $user_id ] ) ) {
+			$GLOBALS['mcr_user_meta'][ $user_id ] = array();
+		}
+		$GLOBALS['mcr_user_meta'][ $user_id ][ $key ] = $value;
+		return true;
+	}
+}
+
+if ( ! function_exists( 'delete_option' ) ) {
+	/**
+	 * Option delete.
+	 *
+	 * @param string $name Option name.
+	 * @return bool
+	 */
+	function delete_option( $name ) {
+		unset( $GLOBALS['mcr_options'][ $name ] );
+		return true;
+	}
+}
+
+if ( ! function_exists( 'add_option' ) ) {
+	/**
+	 * Option add.
+	 *
+	 * @param string $name  Option name.
+	 * @param mixed  $value Value.
+	 * @return bool
+	 */
+	function add_option( $name, $value = '', $deprecated = '', $autoload = 'yes' ) {
+		if ( ! isset( $GLOBALS['mcr_options'][ $name ] ) ) {
+			$GLOBALS['mcr_options'][ $name ] = $value;
+			return true;
+		}
+		return false;
+	}
+}
 
 /**
  * Site option read.
@@ -473,6 +567,7 @@ function update_site_option( $option, $value ) {
  * @return string
  */
 function add_menu_page() {
+	$GLOBALS['mcr_menu_pages'][] = func_get_args();
 	return 'mcr-dashboard';
 }
 
@@ -482,6 +577,7 @@ function add_menu_page() {
  * @return string
  */
 function add_submenu_page() {
+	$GLOBALS['mcr_menu_pages'][] = func_get_args();
 	return '';
 }
 
@@ -491,7 +587,46 @@ function add_submenu_page() {
  * @return null
  */
 function get_current_screen() {
+	if ( ! empty( $GLOBALS['mcr_screen_id'] ) ) {
+		return (object) array( 'id' => $GLOBALS['mcr_screen_id'] );
+	}
 	return null;
+}
+
+function __checked_selected_helper( $helper, $current, $echo, $type ) {
+	if ( (string) $helper === (string) $current ) {
+		$result = " $type='$type'";
+	} else {
+		$result = '';
+	}
+	if ( $echo ) {
+		echo $result;
+	}
+	return $result;
+}
+
+function checked( $checked, $current = true, $echo = true ) {
+	return __checked_selected_helper( $checked, $current, $echo, 'checked' );
+}
+
+function selected( $selected, $current = true, $echo = true ) {
+	return __checked_selected_helper( $selected, $current, $echo, 'selected' );
+}
+
+/**
+ * dbDelta stub for database upgrades.
+ *
+ * @param string|array $queries Query or queries.
+ * @return array
+ */
+function dbDelta( $queries ) {
+	if ( ! isset( $GLOBALS['mcr_dbdelta'] ) ) {
+		$GLOBALS['mcr_dbdelta'] = array();
+	}
+	foreach ( (array) $queries as $query ) {
+		$GLOBALS['mcr_dbdelta'][] = $query;
+	}
+	return array();
 }
 
 /**
@@ -533,6 +668,13 @@ function settings_fields() {}
 function do_settings_sections() {}
 
 /**
+ * Render settings fields.
+ *
+ * @return void
+ */
+function do_settings_fields() {}
+
+/**
  * Register a block type.
  *
  * @param string $name Block name.
@@ -558,6 +700,17 @@ function wp_register_script( $handle, $src = '', $deps = array(), $ver = false, 
  * @return bool
  */
 function wp_script_is( $handle, $list = 'enqueued' ) {
+	return false;
+}
+
+/**
+ * Is a style registered or enqueued.
+ *
+ * @param string $handle Style handle.
+ * @param string $list   List.
+ * @return bool
+ */
+function wp_style_is( $handle, $list = 'enqueued' ) {
 	return false;
 }
 
@@ -609,14 +762,16 @@ function wp_login_url( $redirect = '' ) {
  */
 function register_rest_route() {}
 
-/**
- * Did an action fire.
- *
- * @param string $tag Hook name.
- * @return int
- */
-function did_action( $tag ) {
-	return 1;
+if ( ! function_exists( 'did_action' ) ) {
+	/**
+	 * Did an action fire.
+	 *
+	 * @param string $tag Hook name.
+	 * @return int
+	 */
+	function did_action( $tag ) {
+		return 1;
+	}
 }
 
 /**
@@ -629,12 +784,18 @@ function wp_safe_redirect( $location ) {
 	return true;
 }
 
-/**
- * Abort.
- *
- * @param string $message Message.
- * @return void
- */
+if ( ! function_exists( 'wp_die' ) ) {
+	/**
+	 * Abort.
+	 *
+	 * @param string|WP_Error $message Message.
+	 * @return void
+	 */
+	function wp_die( $message = '', $title = '', $args = array() ) {
+		$text = is_wp_error( $message ) ? $message->get_error_message() : (string) $message;
+		throw new \RuntimeException( 'wp_die: ' . $text );
+	}
+}
 
 /**
  * Blog information.
@@ -653,6 +814,19 @@ function get_bloginfo( $show = '' ) {
  */
 function get_locale() {
 	return 'en_US';
+}
+
+if ( ! function_exists( 'wp_get_current_user' ) ) {
+	function wp_get_current_user() {
+		$uid = function_exists( 'get_current_user_id' ) ? get_current_user_id() : 0;
+		if ( $uid > 0 && function_exists( 'get_userdata' ) ) {
+			return get_userdata( $uid );
+		}
+		$user = new stdClass();
+		$user->ID = $uid;
+		$user->display_name = $uid > 0 ? 'User ' . $uid : '';
+		return $user;
+	}
 }
 
 /**
@@ -712,6 +886,10 @@ class MCR_Fake_WPDB {
 	public function prepare( $sql, ...$args ) {
 		if ( empty( $args ) ) {
 			return $sql;
+		}
+
+		if ( isset( $args[0] ) && is_array( $args[0] ) && 1 === count( $args ) ) {
+			$args = $args[0];
 		}
 
 		$sql     = str_replace( array( '%d', '%f' ), '%s', $sql );
@@ -801,5 +979,205 @@ class MCR_Fake_WPDB {
 	 */
 	public function get_col( $sql ) {
 		return array();
+	}
+}
+
+if ( ! function_exists( 'add_query_arg' ) ) {
+	/**
+	 * Retrieves a modified URL query string.
+	 *
+	 * @param mixed ...$args Query arguments.
+	 * @return string
+	 */
+	function add_query_arg( ...$args ) {
+		if ( empty( $args ) ) {
+			return '';
+		}
+
+		if ( is_array( $args[0] ) ) {
+			if ( count( $args ) < 2 || false === $args[1] ) {
+				$uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '';
+			} else {
+				$uri = (string) $args[1];
+			}
+		} else {
+			if ( count( $args ) < 3 || false === $args[2] ) {
+				$uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '';
+			} else {
+				$uri = (string) $args[2];
+			}
+		}
+
+		$frag = '';
+		$pos  = strpos( $uri, '#' );
+		if ( false !== $pos ) {
+			$frag = substr( $uri, $pos );
+			$uri  = substr( $uri, 0, $pos );
+		}
+
+		$parts = explode( '?', $uri, 2 );
+		$base  = $parts[0];
+		$query = array();
+		if ( isset( $parts[1] ) ) {
+			parse_str( $parts[1], $query );
+		}
+
+		if ( is_array( $args[0] ) ) {
+			foreach ( $args[0] as $k => $v ) {
+				$query[ $k ] = $v;
+			}
+		} else {
+			$query[ $args[0] ] = $args[1];
+		}
+
+		$qs = http_build_query( $query );
+		return $base . ( '' !== $qs ? '?' . $qs : '' ) . $frag;
+	}
+}
+
+if ( ! function_exists( 'remove_query_arg' ) ) {
+	function remove_query_arg( $keys, $query = false ) {
+		if ( false === $query ) {
+			$query = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '';
+		}
+		$frag = '';
+		$pos  = strpos( $query, '#' );
+		if ( false !== $pos ) {
+			$frag  = substr( $query, $pos );
+			$query = substr( $query, 0, $pos );
+		}
+		$parts = explode( '?', $query, 2 );
+		$base  = $parts[0];
+		$args  = array();
+		if ( isset( $parts[1] ) ) {
+			parse_str( $parts[1], $args );
+		}
+		foreach ( (array) $keys as $k ) {
+			unset( $args[ $k ] );
+		}
+		$qs = http_build_query( $args );
+		return $base . ( '' !== $qs ? '?' . $qs : '' ) . $frag;
+	}
+}
+
+if ( ! function_exists( 'esc_url_raw' ) ) {
+	function esc_url_raw( $url ) {
+		return filter_var( (string) $url, FILTER_SANITIZE_URL );
+	}
+}
+
+if ( ! function_exists( 'shortcode_atts' ) ) {
+	/**
+	 * Combine user attributes with known attributes.
+	 *
+	 * @param array  $pairs     Entire list of supported attributes and their defaults.
+	 * @param array  $atts      User defined attributes in shortcode tag.
+	 * @param string $shortcode Shortcode name.
+	 * @return array
+	 */
+	function shortcode_atts( $pairs, $atts, $shortcode = '' ) {
+		$atts = (array) $atts;
+		$out  = array();
+		foreach ( $pairs as $name => $default ) {
+			if ( array_key_exists( $name, $atts ) ) {
+				$out[ $name ] = $atts[ $name ];
+			} else {
+				$out[ $name ] = $default;
+			}
+		}
+		return $out;
+	}
+}
+
+if ( ! function_exists( 'do_shortcode' ) ) {
+	/**
+	 * Search content for shortcodes and filter it through their hooks.
+	 *
+	 * @param string $content     Content.
+	 * @param bool   $ignore_html Ignore html.
+	 * @return string
+	 */
+	function do_shortcode( $content, $ignore_html = false ) {
+		if ( empty( $GLOBALS['mcr_shortcodes'] ) || ! is_array( $GLOBALS['mcr_shortcodes'] ) ) {
+			return $content;
+		}
+
+		foreach ( $GLOBALS['mcr_shortcodes'] as $tag => $callback ) {
+			$pattern = '/\[' . preg_quote( $tag, '/' ) . '(?:\s+([^\]]*))?\](?:(.+?)\[\/' . preg_quote( $tag, '/' ) . '\])?/s';
+			$content = preg_replace_callback( $pattern, function( $m ) use ( $callback, $tag ) {
+				$raw_atts = isset( $m[1] ) ? $m[1] : '';
+				$atts     = array();
+				if ( ! empty( $raw_atts ) ) {
+					if ( preg_match_all( '/(\w+)\s*=\s*(?:["\']([^"\']*)["\']|(\S+))/', $raw_atts, $pairs, PREG_SET_ORDER ) ) {
+						foreach ( $pairs as $p ) {
+							$atts[ $p[1] ] = isset( $p[3] ) && '' !== $p[3] ? $p[3] : ( $p[2] ?? '' );
+						}
+					}
+				}
+				$inner = isset( $m[2] ) ? $m[2] : null;
+				return (string) call_user_func( $callback, $atts, $inner, $tag );
+			}, $content );
+		}
+
+		return $content;
+	}
+}
+
+if ( ! function_exists( 'get_queried_object_id' ) ) {
+	/**
+	 * Retrieve current queried object id.
+	 *
+	 * @return int
+	 */
+	function get_queried_object_id() {
+		return 0;
+	}
+}
+
+if ( ! function_exists( 'esc_html__' ) ) {
+	function esc_html__( $text, $domain = 'default' ) {
+		return htmlspecialchars( (string) $text, ENT_QUOTES, 'UTF-8' );
+	}
+}
+
+if ( ! function_exists( 'esc_html_e' ) ) {
+	function esc_html_e( $text, $domain = 'default' ) {
+		echo htmlspecialchars( (string) $text, ENT_QUOTES, 'UTF-8' );
+	}
+}
+
+if ( ! function_exists( 'esc_attr__' ) ) {
+	function esc_attr__( $text, $domain = 'default' ) {
+		return htmlspecialchars( (string) $text, ENT_QUOTES, 'UTF-8' );
+	}
+}
+
+if ( ! function_exists( 'esc_attr_e' ) ) {
+	function esc_attr_e( $text, $domain = 'default' ) {
+		echo htmlspecialchars( (string) $text, ENT_QUOTES, 'UTF-8' );
+	}
+}
+
+if ( ! function_exists( 'esc_textarea' ) ) {
+	function esc_textarea( $text ) {
+		return htmlspecialchars( (string) $text, ENT_QUOTES, 'UTF-8' );
+	}
+}
+
+if ( ! function_exists( '_n' ) ) {
+	function _n( $single, $plural, $number, $domain = 'default' ) {
+		return 1 === (int) $number ? $single : $plural;
+	}
+}
+
+if ( ! function_exists( 'get_user_by' ) ) {
+	function get_user_by( $field, $value ) {
+		return false;
+	}
+}
+
+if ( ! function_exists( 'get_userdata' ) ) {
+	function get_userdata( $user_id ) {
+		return false;
 	}
 }

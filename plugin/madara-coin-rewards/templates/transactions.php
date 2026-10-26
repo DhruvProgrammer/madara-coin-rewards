@@ -38,6 +38,10 @@ foreach ( $mcr_rows as $mcr_row ) {
 }
 
 $mcr_net = $mcr_in - $mcr_out;
+
+static $mcr_txn_render_idx = 0;
+$mcr_txn_render_idx++;
+$mcr_tbody_id = 1 === $mcr_txn_render_idx ? 'mcr-txn-rows' : 'mcr-txn-rows-' . $mcr_txn_render_idx;
 ?>
 <?php if ( ! empty( $mcr_rows ) ) : ?>
 	<section class="mcr-section" id="mcr-txn-summary" aria-labelledby="mcr-txn-summary-title">
@@ -156,7 +160,7 @@ $mcr_net = $mcr_in - $mcr_out;
 							<th scope="col" class="mcr-table__num"><?php esc_html_e( 'Balance after', 'madara-coin-rewards' ); ?></th>
 						</tr>
 					</thead>
-					<tbody id="mcr-txn-rows">
+					<tbody id="mcr-txn-rows" data-mcr-txn-rows="1">
 						<?php foreach ( $mcr_rows as $mcr_row ) : ?>
 							<?php
 							$mcr_amount  = isset( $mcr_row['amount'] ) ? (int) $mcr_row['amount'] : 0;

@@ -183,23 +183,39 @@ class Shortcodes {
 	 * @return array
 	 */
 	private function checkin_args( $user_id ) {
-		$status  = $this->checkin_status( $user_id );
-		$bonuses = Settings::get( 'checkin.bonuses', array() );
-		$bonuses = is_array( $bonuses ) ? $bonuses : array();
-
+		$status   = $this->checkin_status( $user_id );
+		$bonuses  = Settings::get( 'checkin.bonuses', array() );
+		$bonuses  = is_array( $bonuses ) ? $bonuses : array();
 		ksort( $bonuses );
-
-		$streak = isset( $status['streak'] ) ? (int) $status['streak'] : 0;
+		$streak   = isset( $status['streak'] ) ? (int) $status['streak'] : 0;
+		$ads_info = $this->ads_stats( $user_id, true );
+		$units    = $this->ad_units();
 
 		return array(
-			'status'        => $status,
-			'bonuses'       => $bonuses,
-			'enabled'       => Settings::featureEnabled( 'checkin' ) && ! empty( $status['enabled'] ),
-			'deadline'      => Templates::deadline( isset( $status['next_in'] ) ? (int) $status['next_in'] : 0 ),
-			'streak'        => $streak,
-			'next_bonus'    => $this->next_bonus( $streak, $bonuses ),
-			'timezone'      => function_exists( 'wp_timezone_string' ) ? wp_timezone_string() : 'UTC',
-			'claimable'     => empty( $status['claimed_today'] ) && ! empty( $status['base_claimable'] ),
+			'status'           => $status,
+			'bonuses'          => $bonuses,
+			'enabled'          => Settings::featureEnabled( 'checkin' ) && ! empty( $status['enabled'] ),
+			'deadline'         => Templates::deadline( isset( $status['next_in'] ) ? (int) $status['next_in'] : 0 ),
+			'streak'           => $streak,
+			'next_bonus'       => $this->next_bonus( $streak, $bonuses ),
+			'timezone'         => function_exists( 'wp_timezone_string' ) ? wp_timezone_string() : 'UTC',
+			'claimable'        => empty( $status['claimed_today'] ) && ! empty( $status['base_claimable'] ),
+			'stats'            => $this->ledger_stats( $user_id ),
+			'profile'          => $this->profile( $user_id ),
+			'today_earned'     => $this->today_earned( $user_id ),
+			'ads'              => $ads_info,
+			'ads_enabled'      => Settings::featureEnabled( 'ads' ),
+			'ads_configured'   => $this->ads_configured(),
+			'ad_units'         => $units,
+			'units'            => $units,
+			'coins_per_ad'     => isset( $ads_info['coins_per_ad'] ) ? (int) $ads_info['coins_per_ad'] : (int) Settings::get( 'ads.coins_per_ad', 5 ),
+			'daily_limit'      => isset( $ads_info['limit'] ) ? (int) $ads_info['limit'] : (int) Settings::get( 'ads.daily_limit', 10 ),
+			'ads_cooldown'     => (int) Settings::get( 'ads.cooldown_seconds', 300 ),
+			'cooldown'         => (int) Settings::get( 'ads.cooldown_seconds', 300 ),
+			'ads_reset'        => Templates::deadline( $this->seconds_until_next_day() ),
+			'reset_deadline'   => Templates::deadline( $this->seconds_until_next_day() ),
+			'logged_in'        => $user_id > 0,
+			'login_url'        => function_exists( 'wp_login_url' ) ? wp_login_url( Templates::current_url() ) : '',
 		);
 	}
 
@@ -400,13 +416,15 @@ class Shortcodes {
 	private function transactions_args( $user_id ) {
 		$per_page = 20;
 		$page     = isset( $_GET['mcr_page'] ) ? max( 1, absint( wp_unslash( $_GET['mcr_page'] ) ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$offset   = ( $page - 1 ) * $per_page;
+		$offset   = min( ( $page - 1 ) * $per_page, 10000 );
 
-		$rows  = $this->ledger_rows( $user_id, $per_page, $offset );
-		$total = $this->ledger_total( $user_id );
-		$shown = $offset + count( $rows );
+		$probe_rows = $this->ledger_rows( $user_id, $per_page + 1, $offset );
+		$has_more   = count( $probe_rows ) > $per_page;
+		$rows       = array_slice( $probe_rows, 0, $per_page );
+		$total      = $has_more ? $offset + $per_page + 1 : $offset + count( $rows );
+		$shown      = $offset + count( $rows );
 
-		$next_page = $shown < $total ? $page + 1 : 0;
+		$next_page = $has_more ? $page + 1 : 0;
 
 		$base_url = Templates::current_url();
 
@@ -458,7 +476,7 @@ class Shortcodes {
 			'bonus_amount'  => 0,
 			'total_amount'  => (int) Settings::get( 'checkin.base_amount', 10 ),
 			'next_in'       => $this->seconds_until_next_day(),
-			'today_key'     => gmdate( 'Y-m-d' ),
+			'today_key'     => class_exists( '\MCR\Container' ) ? \MCR\Container::instance()->clock()->today_key() : '',
 			'calendar'      => array(),
 			'enabled'       => Settings::featureEnabled( 'checkin' ),
 			'base_claimable' => true,
@@ -497,12 +515,95 @@ class Shortcodes {
 	}
 
 	/**
+	 * Returns the profile summary for the wallet header.
+	 *
+	 * @param int $user_id User id.
+	 * @return array
+	 */
+	private function profile( $user_id ) {
+		if ( ! $user_id || ! function_exists( 'get_userdata' ) ) {
+			return array(
+				'name'     => '',
+				'avatar'   => '',
+				'initials' => '',
+			);
+		}
+
+		$user = get_userdata( $user_id );
+		if ( ! $user || ! is_object( $user ) ) {
+			return array(
+				'name'     => '',
+				'avatar'   => '',
+				'initials' => '',
+			);
+		}
+
+		$name = isset( $user->display_name ) && '' !== trim( (string) $user->display_name )
+			? trim( (string) $user->display_name )
+			: ( isset( $user->user_login ) ? (string) $user->user_login : '' );
+
+		$words    = preg_split( '/\s+/u', $name );
+		$initials = '';
+		if ( ! empty( $words ) ) {
+			if ( count( $words ) >= 2 ) {
+				$initials = mb_substr( $words[0], 0, 1, 'UTF-8' ) . mb_substr( $words[1], 0, 1, 'UTF-8' );
+			} else {
+				$initials = mb_substr( $words[0], 0, 1, 'UTF-8' );
+			}
+		}
+
+		$avatar = function_exists( 'get_avatar_url' )
+			? (string) get_avatar_url( $user_id, 96 )
+			: '';
+
+		return array(
+			'name'     => $name,
+			'avatar'   => $avatar,
+			'initials' => $initials,
+		);
+	}
+
+	/**
+	 * Calculates the coins earned today by the user.
+	 *
+	 * @param int $user_id User id.
+	 * @return int
+	 */
+	private function today_earned( $user_id ) {
+		if ( ! $user_id ) {
+			return 0;
+		}
+
+		global $wpdb;
+		$table = $wpdb->prefix . 'mcr_transactions';
+		$clock = \MCR\Container::instance()->clock();
+
+		$day_start = $clock->now()->setTime( 0, 0, 0 )->setTimezone( new \DateTimeZone( 'UTC' ) )->format( 'Y-m-d H:i:s' );
+		$day_end   = $clock->now()->setTime( 0, 0, 0 )->modify( '+1 day' )->setTimezone( new \DateTimeZone( 'UTC' ) )->format( 'Y-m-d H:i:s' );
+
+		$earned = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COALESCE(SUM(amount), 0) FROM {$table}
+				 WHERE user_id = %d
+				   AND created_at >= %s
+				   AND created_at < %s
+				   AND ( amount >= 0 OR type IN ( 'reversal', 'refund' ) )",
+				$user_id,
+				$day_start,
+				$day_end
+			)
+		);
+
+		return max( 0, $earned );
+	}
+
+	/**
 	 * Returns the ad statistics, defensively.
 	 *
 	 * @param int $user_id User id.
 	 * @return array
 	 */
-	private function ads_stats( $user_id ) {
+	private function ads_stats( $user_id, $today_only = false ) {
 		$limit = (int) Settings::get( 'ads.daily_limit', 10 );
 
 		$defaults = array(
@@ -518,7 +619,7 @@ class Shortcodes {
 			return $defaults;
 		}
 
-		$stats = AdSessions::instance()->stats( $user_id );
+		$stats = AdSessions::instance()->stats( $user_id, $today_only );
 
 		return is_array( $stats ) ? array_merge( $defaults, $stats ) : $defaults;
 	}
@@ -740,7 +841,7 @@ class Shortcodes {
 			return array();
 		}
 
-		$rows = Ledger::instance()->list_for_user( $user_id, 100, 0 );
+		$rows = Ledger::instance()->list_for_user( $user_id, $limit, 0, 'ad_reward' );
 
 		if ( ! is_array( $rows ) ) {
 			return array();
@@ -749,15 +850,7 @@ class Shortcodes {
 		$out = array();
 
 		foreach ( $rows as $row ) {
-			if ( ! isset( $row->type ) || 'ad_reward' !== $row->type ) {
-				continue;
-			}
-
 			$out[] = $this->format_transaction( $row );
-
-			if ( count( $out ) >= $limit ) {
-				break;
-			}
 		}
 
 		return $out;
@@ -890,6 +983,6 @@ class Shortcodes {
 			return (int) \MCR\Container::instance()->clock()->seconds_until_next_day();
 		}
 
-		return max( 0, strtotime( 'tomorrow midnight' ) - time() );
+		return 0;
 	}
 }

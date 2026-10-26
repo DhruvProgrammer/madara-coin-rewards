@@ -427,7 +427,7 @@ $line_count = 0;
 
 foreach ( $php_files as $path ) {
 	$file_count++;
-	$rel   = str_replace( $root . DIRECTORY_SEPARATOR, '', $path );
+	$rel   = str_replace( '\\', '/', str_replace( $root . DIRECTORY_SEPARATOR, '', $path ) );
 	$lines = file( $path, FILE_IGNORE_NEW_LINES );
 
 	if ( false !== $lines ) {
@@ -436,7 +436,7 @@ foreach ( $php_files as $path ) {
 
 	$allowed = false;
 
-	if ( 0 === strpos( $rel, 'tests' . DIRECTORY_SEPARATOR ) ) {
+	if ( 0 === strpos( $rel, 'tests/' ) ) {
 		$allowed = true;
 	}
 

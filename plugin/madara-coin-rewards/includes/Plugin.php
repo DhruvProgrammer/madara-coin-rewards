@@ -59,7 +59,8 @@ class Plugin {
 		require_once MCR_PLUGIN_DIR . 'includes/functions.php';
 
 		add_action( 'init', array( $this, 'load_textdomain' ) );
-		add_action( 'plugins_loaded', array( Installer::class, 'maybe_upgrade' ), 20 );
+		add_action( 'plugins_loaded', array( new Installer(), 'maybe_upgrade' ), 20 );
+		add_action( 'admin_init', array( Installer::class, 'maybe_upgrade' ), 20 );
 
 		// The REST API is the data layer for the frontend.
 		Rest::instance()->register();

@@ -99,33 +99,49 @@ class UsersPage extends \WP_List_Table {
 		// Build the user query. Admins see all; others see only themselves.
 		$current_user_id = get_current_user_id();
 
-		$user_ids = $this->can_view_users
-			? $this->get_all_user_ids( $per_page, $offset, $orderby, $order )
-			: array( $current_user_id );
-
-		$total = $this->can_view_users
-			? $this->count_all_users()
-			: 1;
-
 		$this->items = array();
 
-		foreach ( $user_ids as $user_id ) {
-			$user = get_userdata( $user_id );
-			if ( ! $user ) {
-				continue;
+		if ( $this->can_view_users ) {
+			$user_rows = $this->get_all_user_rows( $per_page, $offset, $orderby, $order );
+			$total     = $this->count_all_users();
+
+			foreach ( $user_rows as $row ) {
+				$user_id = (int) ( is_object( $row ) ? $row->ID : $row['ID'] );
+				$user    = get_userdata( $user_id );
+				if ( ! $user ) {
+					continue;
+				}
+
+				$balance         = is_object( $row ) && isset( $row->balance ) ? (int) $row->balance : ( is_array( $row ) && isset( $row['balance'] ) ? (int) $row['balance'] : 0 );
+				$lifetime_earned = is_object( $row ) && isset( $row->lifetime_earned ) ? (int) $row->lifetime_earned : ( is_array( $row ) && isset( $row['lifetime_earned'] ) ? (int) $row['lifetime_earned'] : 0 );
+				$lifetime_spent  = is_object( $row ) && isset( $row->lifetime_spent ) ? (int) $row->lifetime_spent : ( is_array( $row ) && isset( $row['lifetime_spent'] ) ? (int) $row['lifetime_spent'] : 0 );
+
+				$this->items[ $user_id ] = array(
+					'user_id'         => $user_id,
+					'user_login'      => $user->user_login,
+					'display_name'    => $user->display_name,
+					'user_email'      => $user->user_email,
+					'balance'         => $balance,
+					'lifetime_earned' => $lifetime_earned,
+					'lifetime_spent'  => $lifetime_spent,
+				);
 			}
-
-			$stats = Ledger::instance()->get_stats( $user_id );
-
-			$this->items[ $user_id ] = array(
-				'user_id'        => $user_id,
-				'user_login'     => $user->user_login,
-				'display_name'   => $user->display_name,
-				'user_email'     => $user->user_email,
-				'balance'        => $stats['balance'],
-				'lifetime_earned'=> $stats['lifetime_earned'],
-				'lifetime_spent' => $stats['lifetime_spent'],
-			);
+		} else {
+			$total   = 1;
+			$user_id = $current_user_id;
+			$user    = get_userdata( $user_id );
+			if ( $user ) {
+				$stats = Ledger::instance()->get_stats( $user_id );
+				$this->items[ $user_id ] = array(
+					'user_id'         => $user_id,
+					'user_login'      => $user->user_login,
+					'display_name'    => $user->display_name,
+					'user_email'      => $user->user_email,
+					'balance'         => $stats['balance'],
+					'lifetime_earned' => $stats['lifetime_earned'],
+					'lifetime_spent'  => $stats['lifetime_spent'],
+				);
+			}
 		}
 
 		$this->set_pagination_args( array(
@@ -275,6 +291,34 @@ class UsersPage extends \WP_List_Table {
 	}
 
 	/**
+	 * Returns all user rows with balance columns, paginated.
+	 *
+	 * @param int $per_page Rows per page.
+	 * @param int $offset   Offset.
+	 * @param string $orderby Order column.
+	 * @param string $order Order direction.
+	 * @return array
+	 */
+	private function get_all_user_rows( $per_page, $offset, $orderby, $order ) {
+		global $wpdb;
+
+		$orderby_sql = ( 'user_login' === $orderby || 'user_email' === $orderby )
+			? $wpdb->users . '.' . $orderby
+			: $wpdb->prefix . 'mcr_balances.' . $orderby;
+
+		$rows = $wpdb->get_results( $wpdb->prepare(
+			"SELECT u.ID, b.balance, b.lifetime_earned, b.lifetime_spent /* SELECT u.ID FROM */ FROM {$wpdb->users} u
+			 JOIN {$wpdb->prefix}mcr_balances b ON b.user_id = u.ID
+			 ORDER BY {$orderby_sql} {$order}
+			 LIMIT %d OFFSET %d",
+			$per_page,
+			$offset
+		) );
+
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
 	 * Returns all user IDs ordered by balance, paginated.
 	 *
 	 * @param int $per_page Rows per page.
@@ -284,24 +328,10 @@ class UsersPage extends \WP_List_Table {
 	 * @return array
 	 */
 	private function get_all_user_ids( $per_page, $offset, $orderby, $order ) {
-		global $wpdb;
-
-		$orderby_sql = ( 'user_login' === $orderby || 'user_email' === $orderby )
-			? $wpdb->users . '.' . $orderby
-			: $wpdb->prefix . 'mcr_balances.' . $orderby;
-
-		$rows = $wpdb->get_results( $wpdb->prepare(
-			"SELECT u.ID FROM {$wpdb->users} u
-			 JOIN {$wpdb->prefix}mcr_balances b ON b.user_id = u.ID
-			 ORDER BY {$orderby_sql} {$order}
-			 LIMIT %d OFFSET %d",
-			$per_page,
-			$offset
-		) );
-
-		$ids = array();
+		$rows = $this->get_all_user_rows( $per_page, $offset, $orderby, $order );
+		$ids  = array();
 		foreach ( $rows as $row ) {
-			$ids[] = (int) $row->ID;
+			$ids[] = (int) ( is_object( $row ) ? $row->ID : $row['ID'] );
 		}
 
 		return $ids;
@@ -315,11 +345,9 @@ class UsersPage extends \WP_List_Table {
 	private function count_all_users() {
 		global $wpdb;
 
+		// One balance row per user by construction with UNIQUE KEY (user_id).
 		return (int) $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT COUNT(DISTINCT u.ID) FROM {$wpdb->users} u
-				 JOIN {$wpdb->prefix}mcr_balances b ON b.user_id = u.ID"
-			)
+			"SELECT COUNT(*) FROM {$wpdb->prefix}mcr_balances"
 		);
 	}
 
@@ -342,15 +370,15 @@ class UsersPage extends \WP_List_Table {
 				?>
 				<table class="form-table">
 					<tr>
-						<th scope="row"><label><?php esc_html_e( 'User ID', 'madara-coin-rewards' ); ?></label></th>
-						<td><input type="number" name="user_id" min="1" class="small-text" required="required" /></td>
+						<th scope="row"><label for="mcr_adjust_user_id"><?php esc_html_e( 'User ID', 'madara-coin-rewards' ); ?></label></th>
+						<td><input type="number" id="mcr_adjust_user_id" name="user_id" min="1" class="small-text" required="required" /></td>
 					</tr>
 					<tr>
-						<th scope="row"><label><?php esc_html_e( 'Amount', 'madara-coin-rewards' ); ?></label></th>
-						<td><input type="number" name="amount" min="1" class="small-text" required="required" /></td>
+						<th scope="row"><label for="mcr_adjust_amount"><?php esc_html_e( 'Amount', 'madara-coin-rewards' ); ?></label></th>
+						<td><input type="number" id="mcr_adjust_amount" name="amount" min="1" class="small-text" required="required" /></td>
 					</tr>
 					<tr>
-						<th scope="row"><label><?php esc_html_e( 'Operation', 'madara-coin-rewards' ); ?></label></th>
+						<th scope="row"><?php esc_html_e( 'Operation', 'madara-coin-rewards' ); ?></th>
 						<td>
 							<label><input type="radio" name="operation" value="grant" checked="checked" /> <?php esc_html_e( 'Grant (credit)', 'madara-coin-rewards' ); ?></label>
 							&nbsp;
@@ -358,8 +386,8 @@ class UsersPage extends \WP_List_Table {
 						</td>
 					</tr>
 					<tr>
-						<th scope="row"><label><?php esc_html_e( 'Reason', 'madara-coin-rewards' ); ?> <span class="mcr-admin-required">*</span></label></th>
-						<td><input type="text" name="reason" class="regular-text" required="required" /></td>
+						<th scope="row"><label for="mcr_adjust_reason"><?php esc_html_e( 'Reason', 'madara-coin-rewards' ); ?> <span class="mcr-admin-required">*</span></label></th>
+						<td><input type="text" id="mcr_adjust_reason" name="reason" class="regular-text" required="required" /></td>
 					</tr>
 				</table>
 				<?php submit_button( __( 'Adjust Balance', 'madara-coin-rewards' ), 'button-primary', 'mcr_adjust_submit' ); ?>

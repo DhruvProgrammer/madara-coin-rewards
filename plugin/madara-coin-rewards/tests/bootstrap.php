@@ -51,6 +51,57 @@ if ( ! defined( 'MCR_TEST_MODE' ) ) {
 	define( 'MCR_TEST_MODE', 'REAL_PLUGIN_SOURCE' );
 }
 
+if ( ! defined( 'SODIUM_CRYPTO_SECRETBOX_NONCEBYTES' ) ) {
+	define( 'SODIUM_CRYPTO_SECRETBOX_NONCEBYTES', 24 );
+}
+
+if ( ! function_exists( 'sodium_crypto_secretbox' ) ) {
+	function sodium_crypto_secretbox( $plain, $nonce, $key ) {
+		$pad   = '';
+		$block = 0;
+		while ( strlen( $pad ) < strlen( $plain ) ) {
+			$pad .= hash( 'sha256', $key . $nonce . ( $block++ ), true );
+		}
+		return $plain ^ substr( $pad, 0, strlen( $plain ) );
+	}
+}
+
+if ( ! function_exists( 'sodium_crypto_secretbox_open' ) ) {
+	function sodium_crypto_secretbox_open( $cipher, $nonce, $key ) {
+		return sodium_crypto_secretbox( $cipher, $nonce, $key );
+	}
+}
+
+if ( ! function_exists( 'mb_strlen' ) ) {
+	function mb_strlen( $string, $encoding = null ) {
+		if ( function_exists( 'iconv_strlen' ) ) {
+			$res = @iconv_strlen( (string) $string, $encoding ?: 'UTF-8' );
+			if ( false !== $res ) {
+				return $res;
+			}
+		}
+		return strlen( (string) $string );
+	}
+}
+
+if ( ! function_exists( 'mb_substr' ) ) {
+	function mb_substr( $string, $start, $length = null, $encoding = null ) {
+		if ( function_exists( 'iconv_substr' ) ) {
+			$res = @iconv_substr( (string) $string, $start, $length ?? 2147483647, $encoding ?: 'UTF-8' );
+			if ( false !== $res ) {
+				return $res;
+			}
+		}
+		return null === $length ? substr( (string) $string, $start ) : substr( (string) $string, $start, $length );
+	}
+}
+
+if ( ! function_exists( 'mb_strtoupper' ) ) {
+	function mb_strtoupper( $string, $encoding = null ) {
+		return strtoupper( (string) $string );
+	}
+}
+
 /* ==========================================================================
  * 1. Tiny assertion framework
  * ======================================================================== */
@@ -71,6 +122,10 @@ $GLOBALS['mcr_tests'] = array(
 function mcr_group( $name ) {
 	$GLOBALS['mcr_tests']['group'] = $name;
 	echo "\n  " . $name . "\n";
+
+	if ( class_exists( '\MCR\Templates\Templates' ) ) {
+		\MCR\Templates\Templates::reset_render_count();
+	}
 }
 
 /**
@@ -620,6 +675,15 @@ function wp_timezone() {
 	return new DateTimeZone( 'UTC' );
 }
 
+if ( ! function_exists( 'wp_date' ) ) {
+	function wp_date( $format, $timestamp = null, $timezone = null ) {
+		if ( null === $timestamp ) {
+			$timestamp = time();
+		}
+		return date( $format, $timestamp );
+	}
+}
+
 /**
  * Current time stub.
  *
@@ -753,6 +817,12 @@ function is_user_logged_in() {
  */
 function current_user_can( $cap ) {
 	return ! empty( $GLOBALS['mcr_caps'][ $cap ] );
+}
+
+if ( ! function_exists( 'did_action' ) ) {
+	function did_action( $tag ) {
+		return 0;
+	}
 }
 
 /**
